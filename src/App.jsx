@@ -127,6 +127,9 @@ export default function App() {
   const b = sizing.source === 'c' ? sizeForOffset(sizing.value, y, kwhPerKw) : Math.min(sizing.value, maxB);
   const actualOffset = offsetForSize(b, y, kwhPerKw); // what the rounded b actually produces
   const c = sizing.source === 'c' ? sizing.value : actualOffset;
+  // Savings are capped at 100% of the bill: excess production earns nothing for now
+  // (utility-specific net metering / buyback rules come later).
+  const savingsOffset = Math.min(actualOffset, 100);
   const { low: d, high: e } = costRange(b);
   const avgCost = (d + e) / 2;
 
@@ -136,16 +139,16 @@ export default function App() {
   );
 
   const cashflow = useMemo(
-    () => cumulativeCashFlow({ systemCost: avgCost, x, offsetPct: actualOffset, zPct: z, years: CASHFLOW_YEARS }),
-    [avgCost, x, actualOffset, z]
+    () => cumulativeCashFlow({ systemCost: avgCost, x, offsetPct: savingsOffset, zPct: z, years: CASHFLOW_YEARS }),
+    [avgCost, x, savingsOffset, z]
   );
   const breakeven = breakevenYear(cashflow);
   const spendSeries = useMemo(() => cumulativeSpend(x, z, CASHFLOW_YEARS), [x, z]);
   // With solar: system cost up front + the share of the bill solar doesn't offset.
   // Gap to spendSeries in year n equals cashflow[n].
   const solarSpendSeries = useMemo(
-    () => spendSeries.map((v) => avgCost + v * (1 - actualOffset / 100)),
-    [spendSeries, avgCost, actualOffset]
+    () => spendSeries.map((v) => avgCost + v * (1 - savingsOffset / 100)),
+    [spendSeries, avgCost, savingsOffset]
   );
 
   const hasUsage = y > 0;

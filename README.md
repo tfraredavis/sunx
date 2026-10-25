@@ -118,7 +118,7 @@ Tests: `npm test` (calculation math + API handlers with mocked network calls).
 | c (%) | b × kWh/kW ÷ y (when the user edits b) |
 | d / e | b × $2.20/W / b × $2.70/W (gross, no incentives) |
 | Monthly production | b × PVWatts monthly output per kW |
-| Cash flow | Year 0 = −(d+e)/2; year n += x × offset% × (1+z)ⁿ⁻¹ — offset% is what the rounded b actually produces |
+| Cash flow | Year 0 = −(d+e)/2; year n += x × min(offset%, 100%) × (1+z)ⁿ⁻¹ — offset% is what the rounded b actually produces; savings are capped at 100% of the bill |
 | Breakeven | first whole year with cumulative ≥ 0; “Beyond 40 years” if none |
 
 Defaults: z = 5% (0–100), a = 25 years (0–100), c = 100% (0–200). The chart always runs 40 years.

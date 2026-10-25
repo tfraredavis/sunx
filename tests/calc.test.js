@@ -80,3 +80,11 @@ test('breakeven beyond 40 years → null', () => {
   const s = cumulativeCashFlow({ systemCost: 100000, x: 1000, offsetPct: 100, zPct: 0, years: 40 });
   assert.equal(breakevenYear(s), null);
 });
+
+test('savings above 100% offset equal a 100% system, just at a higher cost', () => {
+  const x = 2000;
+  const s100 = cumulativeCashFlow({ systemCost: 20000, x, offsetPct: Math.min(100, 100), zPct: 5, years: 40 });
+  const s150 = cumulativeCashFlow({ systemCost: 30000, x, offsetPct: Math.min(150, 100), zPct: 5, years: 40 });
+  for (let n = 1; n <= 40; n++) close(s150[n] - s150[n - 1], s100[n] - s100[n - 1]);
+  close(s100[40] - s150[40], 10000);
+});
