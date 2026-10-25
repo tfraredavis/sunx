@@ -10,6 +10,7 @@ import BatteryPlaceholder from './components/BatteryPlaceholder.jsx';
 import MonthDetail from './components/MonthDetail.jsx';
 import RoofImage from './components/RoofImage.jsx';
 import { fileToPayload } from './lib/fileToPayload.js';
+import { DEFAULT_Z, defaultEscalation } from './lib/utility.js';
 import {
   toTwelveMonths,
   sum,
@@ -26,7 +27,6 @@ import {
 } from './lib/calc.js';
 import { dollars, kwh } from './lib/format.js';
 
-const DEFAULT_Z = 5; // % annual utility rate escalation (until the utility database exists)
 const DEFAULT_A = 25; // years
 const DEFAULT_C = 100; // % offset
 const MAX_C = 200;
@@ -76,6 +76,7 @@ export default function App() {
         rate: parsed?.energyChargePerKwh || 0,
         months: months || new Array(12).fill(0),
       });
+      setZ(defaultEscalation(parsed?.utility));
       setManual(!months);
       setStage('ready');
     } catch (err) {
@@ -193,15 +194,13 @@ export default function App() {
                   each year, in <InlineNumber value={a} onCommit={setA} min={0} max={100} label="Years" /> years you
                   will have spent <strong>{dollars(w)}</strong>.
                 </p>
-                <h2>Electricity expense over {CASHFLOW_YEARS} years</h2>
                 <SpendChart
                   series={spendSeries}
                   solarSeries={solarShown ? solarSpendSeries : null}
-                  breakeven={solarShown ? breakeven : null}
+                  cashflow={solarShown ? cashflow : null}
                 />
                 {solarShown && (
                   <>
-                    <h2>Cumulative cash flow</h2>
                     <div className="stats">
                       <div className="stat">
                         <span className="stat-label">Breakeven</span>
@@ -218,7 +217,6 @@ export default function App() {
                         <span className="stat-value">{dollars(cashflow[40])}</span>
                       </div>
                     </div>
-                    <p className="footnote">Based on the average estimated system cost of {dollars(avgCost)}.</p>
                   </>
                 )}
               </section>

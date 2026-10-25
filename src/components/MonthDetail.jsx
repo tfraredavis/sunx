@@ -1,11 +1,11 @@
 import { kwh } from '../lib/format.js';
+import { isPse } from '../lib/utility.js';
 
 const FULL_MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
-const isPse = (utility) => /puget sound energy|\bpse\b/i.test(utility || '');
 
 /**
  * Pinned detail panel for the month the user clicked/tapped on the usage chart.
