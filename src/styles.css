@@ -277,9 +277,6 @@ input[type='number'] {
 .chart-spend {
   height: 260px;
 }
-.chart-cashflow {
-  height: 280px;
-}
 
 /* ---- Stats ---- */
 .stats {

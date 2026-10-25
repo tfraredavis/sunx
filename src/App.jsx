@@ -3,7 +3,6 @@ import './lib/chartSetup.js';
 import Upload from './components/Upload.jsx';
 import BillDetails from './components/BillDetails.jsx';
 import UsageChart from './components/UsageChart.jsx';
-import CashFlowChart from './components/CashFlowChart.jsx';
 import SpendChart from './components/SpendChart.jsx';
 import InlineNumber from './components/InlineNumber.jsx';
 import LeadForm from './components/LeadForm.jsx';
@@ -141,6 +140,12 @@ export default function App() {
   );
   const breakeven = breakevenYear(cashflow);
   const spendSeries = useMemo(() => cumulativeSpend(x, z, CASHFLOW_YEARS), [x, z]);
+  // With solar: system cost up front + the share of the bill solar doesn't offset.
+  // Gap to spendSeries in year n equals cashflow[n].
+  const solarSpendSeries = useMemo(
+    () => spendSeries.map((v) => avgCost + v * (1 - actualOffset / 100)),
+    [spendSeries, avgCost, actualOffset]
+  );
 
   const hasUsage = y > 0;
   const solarReady = hasUsage && solar.status === 'ready' && kwhPerKw > 0;
@@ -189,7 +194,33 @@ export default function App() {
                   will have spent <strong>{dollars(w)}</strong>.
                 </p>
                 <h2>Electricity expense over {CASHFLOW_YEARS} years</h2>
-                <SpendChart series={spendSeries} />
+                <SpendChart
+                  series={spendSeries}
+                  solarSeries={solarShown ? solarSpendSeries : null}
+                  breakeven={solarShown ? breakeven : null}
+                />
+                {solarShown && (
+                  <>
+                    <h2>Cumulative cash flow</h2>
+                    <div className="stats">
+                      <div className="stat">
+                        <span className="stat-label">Breakeven</span>
+                        <span className="stat-value">
+                          {breakeven === null ? `Beyond ${CASHFLOW_YEARS} years` : `Year ${breakeven}`}
+                        </span>
+                      </div>
+                      <div className="stat">
+                        <span className="stat-label">At 25 years</span>
+                        <span className="stat-value">{dollars(cashflow[25])}</span>
+                      </div>
+                      <div className="stat">
+                        <span className="stat-label">At 40 years</span>
+                        <span className="stat-value">{dollars(cashflow[40])}</span>
+                      </div>
+                    </div>
+                    <p className="footnote">Based on the average estimated system cost of {dollars(avgCost)}.</p>
+                  </>
+                )}
               </section>
             )}
 
@@ -199,7 +230,7 @@ export default function App() {
                 className="btn btn-primary reveal-solar"
                 onClick={() => {
                   setShowSolar(true);
-                  setTimeout(() => document.querySelector('.card.solar')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+                  setTimeout(() => document.querySelector('.chart-spend')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
                 }}
               >
                 <span>By comparison, see how much it will cost to generate your own power with solar</span>
@@ -213,7 +244,6 @@ export default function App() {
               <section className="card solar">
                 {solar.status === 'loading' && <p className="muted">Estimating solar production for your address…</p>}
                 {solar.status === 'idle' && <p className="muted">Enter your home address above to size a solar system.</p>}
-                {solar.loc && <RoofImage lat={solar.loc.lat} lon={solar.loc.lon} />}
                 {solar.status === 'error' && <p className="error">{solar.error}. Check the address above.</p>}
 
                 {solarReady && (
@@ -245,28 +275,9 @@ export default function App() {
                       </strong>
                       .
                     </p>
-
-                    <h2>Cumulative cash flow</h2>
-                    <div className="stats">
-                      <div className="stat">
-                        <span className="stat-label">Breakeven</span>
-                        <span className="stat-value">
-                          {breakeven === null ? `Beyond ${CASHFLOW_YEARS} years` : `Year ${breakeven}`}
-                        </span>
-                      </div>
-                      <div className="stat">
-                        <span className="stat-label">At 25 years</span>
-                        <span className="stat-value">{dollars(cashflow[25])}</span>
-                      </div>
-                      <div className="stat">
-                        <span className="stat-label">At 40 years</span>
-                        <span className="stat-value">{dollars(cashflow[40])}</span>
-                      </div>
-                    </div>
-                    <CashFlowChart series={cashflow} />
-                    <p className="footnote">Based on the average estimated system cost of {dollars(avgCost)}.</p>
                   </>
                 )}
+                {solar.loc && <RoofImage lat={solar.loc.lat} lon={solar.loc.lon} />}
               </section>
             )}
 
