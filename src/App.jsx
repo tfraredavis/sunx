@@ -272,7 +272,7 @@ export default function App() {
                   className={`btn ${cta === 'consult' ? 'btn-primary' : 'btn-outline'}`}
                   onClick={() => setCta('consult')}
                 >
-                  Submit preliminary design to a local consultant for a free solar savings report
+                  Submit this preliminary design to a local consultant to provide exact shading map, panel layout, and quote
                 </button>
                 <span className="cta-or">OR</span>
                 <button
