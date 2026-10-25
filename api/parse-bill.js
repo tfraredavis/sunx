@@ -95,9 +95,14 @@ export default async function handler(req, res) {
     });
 
     if (!r.ok) {
-      const detail = await r.text();
+      const raw = await r.text();
+      let detail = raw.slice(0, 300);
+      try {
+        const e = JSON.parse(raw).error;
+        if (e) detail = `${e.type}: ${e.message}`;
+      } catch {}
       console.error('Anthropic API error', r.status, detail);
-      return res.status(502).json({ error: 'Bill parsing service error' });
+      return res.status(502).json({ error: 'Bill parsing service error', detail: `Anthropic ${r.status} ${detail}` });
     }
 
     const body = await r.json();
@@ -109,7 +114,7 @@ export default async function handler(req, res) {
     return res.status(200).json(clean(extractJson(text)));
   } catch (err) {
     console.error('parse-bill failed', err);
-    return res.status(502).json({ error: 'Could not read the bill' });
+    return res.status(502).json({ error: 'Could not read the bill', detail: String(err?.message || err) });
   }
 }
 

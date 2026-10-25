@@ -55,7 +55,14 @@ export default function App() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const parsed = r.ok ? await r.json() : null;
+      let parsed = null;
+      if (r.ok) {
+        parsed = await r.json();
+      } else {
+        // Diagnostic only (browser console) — the homeowner sees the manual-entry prompt.
+        const body = await r.text();
+        console.error('[sunx] parse-bill failed', r.status, body.slice(0, 500));
+      }
       const months = parsed ? toTwelveMonths(parsed.monthlyUsage) : null;
 
       setBill({
