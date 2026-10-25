@@ -14,9 +14,16 @@ const PROMPT = `You are reading a residential electric utility bill. Extract the
 {
   "utility": string or null,            // the electric utility's name as printed (e.g. "Puget Sound Energy")
   "service_address": string or null,    // the SERVICE address (where electricity is used), one line: "street, city, ST ZIP". Not the mailing/remit-to address unless it is the only address.
-  "energy_charge_per_kwh": number or null, // $/kWh for the ENERGY CHARGE ONLY for the current billing period.
-                                        // Use the energy charge line item(s) that are billed per kWh. If tiered/blocked, return total energy charge dollars ÷ total kWh in those lines.
-                                        // Exclude basic/customer/service charges, fixed charges, taxes, riders, credits, and fees.
+  "electric_kwh_billed": number or null, // total kWh billed for the current ELECTRIC billing period (e.g. "726 kWh used for service ...")
+  "per_kwh_line_items": [               // EVERY electric line item in the current period billed as a $/kWh rate × kWh
+    { "description": string, "rate": number, "kwh": number }
+  ],
+                                        // Include: tier/block energy charges, conservation program charges, power cost adjustments,
+                                        //   and per-kWh riders, charges, and credits (credits have a NEGATIVE rate).
+                                        // Copy the rate exactly as printed (all decimals) and the kWh it applies to.
+                                        // Exclude: basic/customer/monthly charges, demand ($/kW) charges, taxes and percentage charges,
+                                        //   natural gas lines (therms/CCF), one-time or event credits (e.g. peak time rebates),
+                                        //   and anything from previous billing periods.
   "monthly_usage": [                    // electricity use by month from the usage history graph or table
     { "year": number, "month": number, "kwh": number }   // month is 1-12
   ]
@@ -36,6 +43,23 @@ function extractJson(text) {
   return JSON.parse(text.slice(start, end + 1));
 }
 
+/**
+ * Energy charge $/kWh = Σ(rate × kWh) over every per-kWh line ÷ total kWh billed.
+ * Equivalent to: blended tier rate + Σ adder rates (adders apply to all kWh).
+ * Lines whose kWh exceeds the billed total are ignored as misreads.
+ */
+function energyChargeFromLines(items, kwhBilled) {
+  if (!Array.isArray(items) || items.length === 0) return NaN;
+  const lines = items
+    .map((l) => ({ rate: Number(l.rate), kwh: Number(l.kwh) }))
+    .filter((l) => Number.isFinite(l.rate) && Number.isFinite(l.kwh) && l.kwh > 0);
+  if (lines.length === 0) return NaN;
+  let total = Number(kwhBilled);
+  if (!Number.isFinite(total) || total <= 0) total = Math.max(...lines.map((l) => l.kwh));
+  const dollars = lines.filter((l) => l.kwh <= total * 1.001).reduce((s, l) => s + l.rate * l.kwh, 0);
+  return dollars / total;
+}
+
 function clean(raw) {
   const monthly = Array.isArray(raw.monthly_usage) ? raw.monthly_usage : [];
   const monthlyUsage = monthly
@@ -46,14 +70,14 @@ function clean(raw) {
     }))
     .filter((m) => m.month >= 1 && m.month <= 12 && Number.isFinite(m.kwh) && m.kwh >= 0);
 
-  const rate = Number(raw.energy_charge_per_kwh);
+  const rate = energyChargeFromLines(raw.per_kwh_line_items, raw.electric_kwh_billed);
   return {
     utility: typeof raw.utility === 'string' && raw.utility.trim() ? raw.utility.trim() : null,
     address:
       typeof raw.service_address === 'string' && raw.service_address.trim()
         ? raw.service_address.trim()
         : null,
-    energyChargePerKwh: Number.isFinite(rate) && rate > 0 && rate < 5 ? rate : null,
+    energyChargePerKwh: Number.isFinite(rate) && rate > 0 && rate < 5 ? Math.round(rate * 1e6) / 1e6 : null,
     monthlyUsage,
   };
 }
@@ -119,4 +143,4 @@ export default async function handler(req, res) {
 }
 
 // Exported for tests.
-export const _internal = { extractJson, clean };
+export const _internal = { extractJson, clean, energyChargeFromLines };

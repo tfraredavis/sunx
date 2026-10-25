@@ -19,7 +19,8 @@ test('clean filters bad months and implausible rates', () => {
   const out = _internal.clean({
     utility: ' Puget Sound Energy ',
     service_address: '123 Main St, Duvall, WA 98019',
-    energy_charge_per_kwh: 0.1189,
+    electric_kwh_billed: 800,
+    per_kwh_line_items: [{ description: 'Energy', rate: 0.1189, kwh: 800 }],
     monthly_usage: [
       { year: 2026, month: 9, kwh: 800 },
       { year: 2026, month: 13, kwh: 1 },
@@ -29,7 +30,10 @@ test('clean filters bad months and implausible rates', () => {
   assert.equal(out.utility, 'Puget Sound Energy');
   assert.equal(out.energyChargePerKwh, 0.1189);
   assert.equal(out.monthlyUsage.length, 1);
-  assert.equal(_internal.clean({ energy_charge_per_kwh: 12 }).energyChargePerKwh, null);
+  assert.equal(
+    _internal.clean({ electric_kwh_billed: 10, per_kwh_line_items: [{ rate: 12, kwh: 10 }] }).energyChargePerKwh,
+    null
+  );
 });
 
 test('parse-bill sends a PDF document block and returns cleaned data', async () => {
@@ -43,7 +47,7 @@ test('parse-bill sends a PDF document block and returns cleaned data', async () 
         content: [
           {
             type: 'text',
-            text: '{"utility":"PSE","service_address":"1 A St, Duvall, WA 98019","energy_charge_per_kwh":0.12,"monthly_usage":[{"year":2026,"month":9,"kwh":700}]}',
+            text: '{"utility":"PSE","service_address":"1 A St, Duvall, WA 98019","electric_kwh_billed":700,"per_kwh_line_items":[{"rate":0.12,"kwh":700}],"monthly_usage":[{"year":2026,"month":9,"kwh":700}]}',
           },
         ],
       }),
@@ -108,4 +112,19 @@ test('solar-resource falls back to ZIP when the street address does not match', 
   assert.equal(res.statusCode, 200);
   assert.equal(res.body.acAnnualPerKw, 990);
   mock.restoreAll();
+});
+
+test('energy charge from PSE line items matches tiers + per-kWh adders', () => {
+  const items = [
+    { description: 'Tier 1 (First 600 kWh Used)', rate: 0.148363, kwh: 600 },
+    { description: 'Tier 2 (Above 600 kWh Used)', rate: 0.16778, kwh: 126 },
+    { description: 'Electric Cons. Program Charge', rate: 0.009409, kwh: 726 },
+    { description: 'Power Cost Adjustment', rate: 0.038719, kwh: 726 },
+    { description: 'Energy Exchange Credit', rate: -0.006648, kwh: 726 },
+    { description: 'Other Electric Charges & Credits', rate: -0.002378, kwh: 726 },
+  ];
+  const expected = (0.148363 * 600 + 0.16778 * 126) / 726 + 0.009409 + 0.038719 - 0.006648 - 0.002378;
+  const got = _internal.clean({ electric_kwh_billed: 726, per_kwh_line_items: items }).energyChargePerKwh;
+  assert.ok(Math.abs(got - expected) < 1e-6, `${got} vs ${expected}`);
+  assert.equal(got, 0.190835);
 });

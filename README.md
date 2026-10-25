@@ -76,7 +76,11 @@ Tests: `npm test` (calculation math + API handlers with mocked network calls).
 - Accepts PDF or any image the browser can open (JPG, PNG, WebP, GIF, BMP; HEIC on Safari).
   Images are converted to JPEG in the browser (max 2000 px edge) before upload. Files must be under ~4 MB
   after encoding (Vercel's request limit).
-- Claude extracts: utility name, service address, **energy charge only** in $/kWh, and monthly kWh history.
+- Claude extracts: utility name, service address, monthly kWh history, total kWh billed, and every
+  electric per-kWh line item (rate × kWh).
+- Energy charge $/kWh = Σ(rate × kWh) ÷ kWh billed — i.e. blended tier rate + all per-kWh adders and credits
+  (conservation, power cost adjustment, exchange credit, other per-kWh charges/credits). Excludes basic
+  charge, taxes, gas, and one-time event credits.
 - Monthly kWh → 12 calendar months: newest year wins for duplicate months; a single month is used for all
   12; any missing months are filled with the average of the months found. All 12 are editable.
 - If nothing usable comes back, the page asks the user to enter monthly consumption manually.
