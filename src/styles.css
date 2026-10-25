@@ -355,6 +355,15 @@ input[type='number'] {
   background: var(--orange-soft);
 }
 
+/* ---- Reveal solar button ---- */
+.reveal-solar {
+  display: block;
+  width: 100%;
+  margin-top: 28px;
+  padding: 18px 22px;
+  font-size: clamp(16px, 2.4vw, 19px);
+}
+
 /* ---- Lead form ---- */
 .lead-form {
   display: grid;

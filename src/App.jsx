@@ -42,6 +42,7 @@ export default function App() {
   const [sizing, setSizing] = useState({ source: 'c', value: DEFAULT_C });
 
   const [solar, setSolar] = useState({ status: 'idle', data: null, error: '' });
+  const [showSolar, setShowSolar] = useState(false); // solar section revealed by the button
   const [cta, setCta] = useState(null); // null | 'consult' | 'battery'
 
   // ---- Bill upload & parsing ----------------------------------------------------------
@@ -135,6 +136,7 @@ export default function App() {
 
   const hasUsage = y > 0;
   const solarReady = hasUsage && solar.status === 'ready' && kwhPerKw > 0;
+  const solarShown = showSolar && solarReady;
 
   // ---- Render -------------------------------------------------------------------------
   return (
@@ -156,7 +158,7 @@ export default function App() {
 
             {hasUsage && (
               <section className="card usage">
-                <UsageChart months={bill.months} production={solarReady ? production : null} />
+                <UsageChart months={bill.months} production={solarShown ? production : null} />
 
                 <p className="copy">
                   In a year, you spend <strong>{dollars(x)}</strong> to use <strong>{kwh(y)} kWh</strong>. If{' '}
@@ -168,7 +170,20 @@ export default function App() {
               </section>
             )}
 
-            {hasUsage && (
+            {hasUsage && !showSolar && (
+              <button
+                type="button"
+                className="btn btn-primary reveal-solar"
+                onClick={() => {
+                  setShowSolar(true);
+                  setTimeout(() => document.querySelector('.card.solar')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+                }}
+              >
+                By comparison, see how much it will cost to generate your own power with solar
+              </button>
+            )}
+
+            {hasUsage && showSolar && (
               <section className="card solar">
                 {solar.status === 'loading' && <p className="muted">Estimating solar production for your address…</p>}
                 {solar.status === 'idle' && <p className="muted">Enter your home address above to size a solar system.</p>}
@@ -228,7 +243,7 @@ export default function App() {
               </section>
             )}
 
-            {solarReady && (
+            {solarShown && (
               <section className="cta">
                 <button
                   type="button"
@@ -248,7 +263,7 @@ export default function App() {
               </section>
             )}
 
-            {solarReady && cta === 'consult' && (
+            {solarShown && cta === 'consult' && (
               <LeadForm
                 initialAddress={bill.address}
                 design={{
@@ -272,7 +287,7 @@ export default function App() {
               />
             )}
 
-            {solarReady && cta === 'battery' && <BatteryPlaceholder />}
+            {solarShown && cta === 'battery' && <BatteryPlaceholder />}
           </>
         )}
       </main>
