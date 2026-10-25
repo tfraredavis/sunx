@@ -38,13 +38,29 @@ NREL was renamed the **National Laboratory of the Rockies (NLR)**, and the devel
 Until you add a key, the app falls back to NLR's shared `DEMO_KEY`, which is heavily rate-limited
 (fine for a quick test, not for real use).
 
-### 4. Deploy on Vercel
+### 4. Google Maps Platform key (roof heatmap)
+
+The solar section shows a Sunroof-style picture of the roof using Google's **Solar API**
+(the data behind Project Sunroof). You can reuse the Google Cloud project from GridReady.
+
+1. <https://console.cloud.google.com> → select the project → **APIs & Services → Library** →
+   search **Solar API** → **Enable**. Billing must be on for the project.
+2. **APIs & Services → Credentials** → use an existing key or **Create credentials → API key**.
+   Restrict it to the **Solar API** (API restrictions). Don't add a website restriction; the key is used
+   server-side only.
+3. Add it to Vercel as `GOOGLE_MAPS_API_KEY`.
+
+Each roof image makes two Solar API requests (building insights + data layers), billed per Google's pricing.
+If an address has no Solar API coverage, the picture is simply left out.
+
+### 5. Deploy on Vercel
 
 1. <https://vercel.com> → **Add New… → Project** → import the `sunx` GitHub repo.
    Framework preset: **Vite** (auto-detected). Leave build settings as default.
 2. **Settings → Environment Variables**, add for Production, Preview, and Development:
    - `ANTHROPIC_API_KEY` = your Anthropic key
    - `NREL_API_KEY` = your NLR key
+   - `GOOGLE_MAPS_API_KEY` = your Google Maps Platform key (Solar API enabled)
    - *(optional)* `ANTHROPIC_MODEL` to override the default `claude-sonnet-5-5`
 3. **Deployments → Redeploy** so the variables take effect.
 

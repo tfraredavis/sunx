@@ -7,6 +7,8 @@ import CashFlowChart from './components/CashFlowChart.jsx';
 import InlineNumber from './components/InlineNumber.jsx';
 import LeadForm from './components/LeadForm.jsx';
 import BatteryPlaceholder from './components/BatteryPlaceholder.jsx';
+import MonthDetail from './components/MonthDetail.jsx';
+import RoofImage from './components/RoofImage.jsx';
 import { fileToPayload } from './lib/fileToPayload.js';
 import {
   toTwelveMonths,
@@ -43,6 +45,7 @@ export default function App() {
 
   const [solar, setSolar] = useState({ status: 'idle', data: null, error: '' });
   const [showSolar, setShowSolar] = useState(false); // solar section revealed by the button
+  const [pinnedMonth, setPinnedMonth] = useState(null); // calendar index of the month tapped on the chart
   const [cta, setCta] = useState(null); // null | 'consult' | 'battery'
 
   // ---- Bill upload & parsing ----------------------------------------------------------
@@ -158,7 +161,20 @@ export default function App() {
 
             {hasUsage && (
               <section className="card usage">
-                <UsageChart months={bill.months} production={solarShown ? production : null} />
+                <UsageChart
+                  months={bill.months}
+                  production={solarShown ? production : null}
+                  selected={solarShown ? pinnedMonth : null}
+                  onSelect={solarShown ? setPinnedMonth : undefined}
+                />
+                {solarShown && (
+                  <MonthDetail
+                    month={pinnedMonth}
+                    consumption={bill.months}
+                    production={production}
+                    utility={bill.utility}
+                  />
+                )}
 
                 <p className="copy copy-hero">
                   In a year, you spend <strong>{dollars(x)}</strong> to use <strong>{kwh(y)} kWh</strong>. If{' '}
@@ -194,6 +210,7 @@ export default function App() {
 
                 {solarReady && (
                   <>
+                    <RoofImage lat={solar.data.lat} lon={solar.data.lon} />
                     <p className="copy">
                       A{' '}
                       <InlineNumber

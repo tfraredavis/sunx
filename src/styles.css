@@ -365,6 +365,130 @@ input[type='number'] {
   background: var(--orange-soft);
 }
 
+/* ---- Pinned month panel ---- */
+.month-hint {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+}
+.month-detail {
+  margin-top: 14px;
+  padding: 14px 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.month-detail h3 {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 700;
+}
+.month-detail dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+.month-detail dt {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.month-detail dd {
+  margin: 2px 0 0;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.month-detail dd.is-prod {
+  color: var(--orange);
+}
+@media (max-width: 480px) {
+  .month-detail dl {
+    grid-template-columns: 1fr;
+  }
+}
+.info-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 8px 14px 8px 8px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.info-btn:hover,
+.info-btn[aria-expanded='true'] {
+  border-color: var(--orange);
+  background: var(--orange-soft);
+}
+.info-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--orange);
+  color: #0b0b0c;
+  font-size: 13px;
+  font-weight: 800;
+  font-style: italic;
+  font-family: Georgia, serif;
+}
+.info-text {
+  margin: 10px 0 0;
+  font-size: 15px;
+}
+
+/* ---- Roof image ---- */
+.roof {
+  margin: 0 0 8px;
+}
+.roof-frame {
+  display: block;
+  width: 100%;
+  max-width: 520px;
+  aspect-ratio: 1;
+  margin: 0 auto;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+}
+.roof-loading {
+  display: grid;
+  place-items: center;
+}
+.roof figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  max-width: 520px;
+  margin: 8px auto 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.roof-scale {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.roof-gradient {
+  width: 90px;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #00000a, #91009c, #e64616, #feb400, #fffff6);
+}
+
 /* ---- Reveal solar button ---- */
 .reveal-solar {
   display: flex;

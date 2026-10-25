@@ -2,7 +2,11 @@
 // Never returns key values. Uses free calls only (Anthropic model list, one PVWatts run).
 
 export default async function handler(req, res) {
-  const out = { anthropic: { keySet: false }, nrel: { keySet: false } };
+  const out = {
+    anthropic: { keySet: false },
+    nrel: { keySet: false },
+    google: { keySet: Boolean((process.env.GOOGLE_MAPS_API_KEY || '').trim()) },
+  };
 
   const ak = (process.env.ANTHROPIC_API_KEY || '').trim().replace(/^['"]|['"]$/g, '');
   if (ak) {
