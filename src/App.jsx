@@ -160,7 +160,7 @@ export default function App() {
               <section className="card usage">
                 <UsageChart months={bill.months} production={solarShown ? production : null} />
 
-                <p className="copy">
+                <p className="copy copy-hero">
                   In a year, you spend <strong>{dollars(x)}</strong> to use <strong>{kwh(y)} kWh</strong>. If{' '}
                   {utilityName} continues raising rates{' '}
                   <InlineNumber value={z} onCommit={setZ} min={0} max={100} decimals={2} suffix="%" label="Annual rate increase" />{' '}
@@ -179,7 +179,10 @@ export default function App() {
                   setTimeout(() => document.querySelector('.card.solar')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
                 }}
               >
-                By comparison, see how much it will cost to generate your own power with solar
+                <span>By comparison, see how much it will cost to generate your own power with solar</span>
+                <svg className="reveal-arrow" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+                  <path d="M12 5v14M5 12l7 7 7-7" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </button>
             )}
 
@@ -192,7 +195,7 @@ export default function App() {
                 {solarReady && (
                   <>
                     <p className="copy">
-                      By comparison, a{' '}
+                      A{' '}
                       <InlineNumber
                         value={b}
                         onCommit={(v) => setSizing({ source: 'b', value: v })}

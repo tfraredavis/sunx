@@ -3,34 +3,40 @@ import { COLORS } from '../lib/chartSetup.js';
 import { DISPLAY_MONTHS, MONTH_LABELS } from '../lib/calc.js';
 import { kwh } from '../lib/format.js';
 
-/** Consumption bars (Apr → Mar) with an optional production line overlay. */
+/**
+ * Consumption bars (Apr → Mar). When `production` is given, translucent orange production bars
+ * are drawn over the consumption bars (same slot, not side by side) so both stay visible.
+ * Tooltip: consumption, production, and net for the hovered month.
+ */
 export default function UsageChart({ months, production }) {
   const labels = DISPLAY_MONTHS.map((i) => MONTH_LABELS[i]);
+  const cons = DISPLAY_MONTHS.map((i) => months[i]);
+  const prod = production ? DISPLAY_MONTHS.map((i) => production[i]) : null;
 
   const datasets = [
     {
-      type: 'bar',
       label: 'Consumption',
-      data: DISPLAY_MONTHS.map((i) => months[i]),
+      data: cons,
       backgroundColor: COLORS.bar,
       hoverBackgroundColor: '#5C5C63',
       borderRadius: 4,
-      maxBarThickness: 36,
+      maxBarThickness: 44,
+      grouped: false,
       order: 2,
     },
   ];
 
-  if (production) {
+  if (prod) {
     datasets.push({
-      type: 'line',
       label: 'Solar production',
-      data: DISPLAY_MONTHS.map((i) => production[i]),
+      data: prod,
+      backgroundColor: 'rgba(216, 90, 48, 0.55)',
+      hoverBackgroundColor: 'rgba(216, 90, 48, 0.7)',
       borderColor: COLORS.orange,
-      backgroundColor: COLORS.orange,
-      borderWidth: 3,
-      pointRadius: 3,
-      pointHoverRadius: 5,
-      tension: 0.35,
+      borderWidth: 1.5,
+      borderRadius: 4,
+      maxBarThickness: 44,
+      grouped: false,
       order: 1,
     });
   }
@@ -40,8 +46,20 @@ export default function UsageChart({ months, production }) {
     maintainAspectRatio: false,
     interaction: { mode: 'index', intersect: false },
     plugins: {
-      legend: { position: 'bottom' },
-      tooltip: { callbacks: { label: (c) => ` ${c.dataset.label}: ${kwh(c.parsed.y)} kWh` } },
+      legend: { position: 'bottom', labels: { sort: (a, b) => a.datasetIndex - b.datasetIndex } },
+      tooltip: {
+        itemSort: (a, b) => a.datasetIndex - b.datasetIndex,
+        callbacks: {
+          label: (c) => ` ${c.dataset.label}: ${kwh(c.parsed.y)} kWh`,
+          afterBody: (items) => {
+            if (!prod) return [];
+            const i = items[0].dataIndex;
+            const net = cons[i] - prod[i];
+            if (Math.round(net) === 0) return ['', ' Net: 0 kWh'];
+            return ['', net > 0 ? ` Net: ${kwh(net)} kWh from the grid` : ` Net: ${kwh(-net)} kWh sent to the grid`];
+          },
+        },
+      },
     },
     scales: {
       x: { grid: { display: false } },

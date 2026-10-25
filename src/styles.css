@@ -72,6 +72,16 @@ h2 {
   line-height: 1.6;
   margin: 20px 0 0;
 }
+.copy-hero {
+  font-size: clamp(26px, 4.4vw, 42px);
+  line-height: 1.35;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  margin-top: 28px;
+}
+.copy-hero strong {
+  font-weight: 800;
+}
 .copy strong {
   color: var(--ink);
   font-weight: 800;
@@ -357,11 +367,47 @@ input[type='number'] {
 
 /* ---- Reveal solar button ---- */
 .reveal-solar {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
   width: 100%;
-  margin-top: 28px;
-  padding: 18px 22px;
-  font-size: clamp(16px, 2.4vw, 19px);
+  margin-top: 36px;
+  padding: 20px 26px;
+  font-size: clamp(17px, 2.4vw, 20px);
+  font-weight: 800;
+  text-align: left;
+  border-radius: 999px;
+  box-shadow: 0 10px 28px rgba(216, 90, 48, 0.35), inset 0 -3px 0 rgba(0, 0, 0, 0.18);
+  transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+}
+.reveal-solar:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 34px rgba(216, 90, 48, 0.45), inset 0 -3px 0 rgba(0, 0, 0, 0.18);
+}
+.reveal-solar:active {
+  transform: translateY(1px);
+  box-shadow: 0 6px 16px rgba(216, 90, 48, 0.3), inset 0 2px 0 rgba(0, 0, 0, 0.18);
+}
+.reveal-solar:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+.reveal-arrow {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  padding: 6px;
+  border-radius: 50%;
+  background: rgba(11, 11, 12, 0.18);
+  animation: nudge 1.6s ease-in-out infinite;
+}
+@keyframes nudge {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(4px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal-arrow { animation: none; }
 }
 
 /* ---- Lead form ---- */
