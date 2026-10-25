@@ -52,7 +52,7 @@ export default async function handler(req, res) {
   const address = (req.body?.address || '').trim();
   if (!address) return res.status(400).json({ error: 'Missing address' });
 
-  const apiKey = process.env.NREL_API_KEY || 'DEMO_KEY';
+  const apiKey = (process.env.NREL_API_KEY || '').trim().replace(/^['"]|['"]$/g, '') || 'DEMO_KEY';
 
   try {
     const loc = (await geocodeCensus(address).catch(() => null)) || (await geocodeZip(address).catch(() => null));

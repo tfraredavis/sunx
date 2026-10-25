@@ -4,7 +4,7 @@
 export default async function handler(req, res) {
   const out = { anthropic: { keySet: false }, nrel: { keySet: false } };
 
-  const ak = process.env.ANTHROPIC_API_KEY;
+  const ak = (process.env.ANTHROPIC_API_KEY || '').trim().replace(/^['"]|['"]$/g, '');
   if (ak) {
     out.anthropic.keySet = true;
     try {
@@ -22,7 +22,7 @@ export default async function handler(req, res) {
     }
   }
 
-  const nk = process.env.NREL_API_KEY;
+  const nk = (process.env.NREL_API_KEY || '').trim().replace(/^['"]|['"]$/g, '');
   out.nrel.keySet = Boolean(nk);
   const p = new URLSearchParams({
     api_key: nk || 'DEMO_KEY', lat: '47.74', lon: '-121.98', system_capacity: '1',
