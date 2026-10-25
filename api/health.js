@@ -24,18 +24,21 @@ export default async function handler(req, res) {
 
   const nk = process.env.NREL_API_KEY;
   out.nrel.keySet = Boolean(nk);
-  try {
-    const p = new URLSearchParams({
-      api_key: nk || 'DEMO_KEY', lat: '47.74', lon: '-121.98', system_capacity: '1',
-      azimuth: '180', tilt: '10', losses: '14', module_type: '0', array_type: '1',
-    });
-    const r = await fetch(`https://developer.nlr.gov/api/pvwatts/v8.json?${p}`);
-    const body = await r.json().catch(() => ({}));
-    out.nrel.status = r.status;
-    out.nrel.ok = r.ok && !body.errors?.length;
-    if (!out.nrel.ok) out.nrel.error = body.errors?.join('; ') || body.error?.message || 'unknown error';
-  } catch (err) {
-    out.nrel.error = String(err?.message || err);
+  const p = new URLSearchParams({
+    api_key: nk || 'DEMO_KEY', lat: '47.74', lon: '-121.98', system_capacity: '1',
+    azimuth: '180', tilt: '10', losses: '14', module_type: '0', array_type: '1',
+  });
+  for (const host of ['developer.nlr.gov', 'developer.nrel.gov']) {
+    const h = (out.nrel[host] = {});
+    try {
+      const r = await fetch(`https://${host}/api/pvwatts/v8.json?${p}`);
+      const body = await r.json().catch(() => ({}));
+      h.status = r.status;
+      h.ok = r.ok && !body.errors?.length && Boolean(body.outputs);
+      if (!h.ok) h.error = body.errors?.join('; ') || (body.error ? `${body.error.code}: ${body.error.message}` : 'no JSON body');
+    } catch (err) {
+      h.error = String(err?.message || err);
+    }
   }
 
   res.setHeader('cache-control', 'no-store');

@@ -95,7 +95,10 @@ export default function App() {
     })
       .then(async (r) => {
         const body = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(body.error || 'Could not estimate solar production');
+        if (!r.ok) {
+          console.error('[sunx] solar-resource failed', r.status, body);
+          throw new Error(body.error || 'Could not estimate solar production');
+        }
         return body;
       })
       .then((data) => !cancelled && setSolar({ status: 'ready', data, error: '' }))

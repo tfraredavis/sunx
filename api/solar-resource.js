@@ -5,7 +5,10 @@
 // 1. Geocodes the address (US Census geocoder, no key; falls back to the ZIP code's centroid).
 // 2. Runs NREL/NLR PVWatts v8 for a 1 kW DC system so the app can scale to any size.
 
-const PVWATTS_URL = 'https://developer.nlr.gov/api/pvwatts/v8.json';
+const PVWATTS_URLS = [
+  'https://developer.nlr.gov/api/pvwatts/v8.json',
+  'https://developer.nrel.gov/api/pvwatts/v8.json', // legacy host
+];
 
 // System assumptions (agreed spec).
 const PV_ASSUMPTIONS = {
@@ -61,11 +64,26 @@ export default async function handler(req, res) {
       lon: String(loc.lon),
       ...Object.fromEntries(Object.entries(PV_ASSUMPTIONS).map(([k, v]) => [k, String(v)])),
     });
-    const r = await fetch(`${PVWATTS_URL}?${params}`);
-    const body = await r.json().catch(() => ({}));
-    if (!r.ok || body.errors?.length) {
-      console.error('PVWatts error', r.status, body.errors);
-      return res.status(502).json({ error: 'Solar production service error' });
+    // Try the current NLR host first, then the legacy NREL host.
+    let body = null;
+    const failures = [];
+    for (const base of PVWATTS_URLS) {
+      try {
+        const r = await fetch(`${base}?${params}`);
+        const b = await r.json().catch(() => ({}));
+        if (r.ok && !b.errors?.length && b.outputs) {
+          body = b;
+          break;
+        }
+        const msg = b.errors?.join('; ') || (b.error ? `${b.error.code}: ${b.error.message}` : 'no JSON body');
+        failures.push(`${new URL(base).hostname} ${r.status} ${msg}`);
+      } catch (err) {
+        failures.push(`${new URL(base).hostname} ${String(err?.message || err)}`);
+      }
+    }
+    if (!body) {
+      console.error('PVWatts error', failures);
+      return res.status(502).json({ error: 'Solar production service error', detail: failures.join(' | ') });
     }
 
     const monthly = body.outputs?.ac_monthly;
