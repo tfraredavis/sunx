@@ -224,7 +224,7 @@ export default function App() {
                         fixed
                         label="System size in kW"
                       />{' '}
-                      kW solar system to offset{' '}
+                      kW solar system can offset{' '}
                       <InlineNumber
                         value={c}
                         onCommit={(v) => setSizing({ source: 'c', value: v })}
@@ -234,7 +234,7 @@ export default function App() {
                         suffix="%"
                         label="Offset percentage"
                       />{' '}
-                      of your electricity expense costs{' '}
+                      of your electricity bill and costs{' '}
                       <strong>
                         {dollars(d)}–{dollars(e)}
                       </strong>
