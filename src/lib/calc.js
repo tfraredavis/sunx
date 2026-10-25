@@ -52,6 +52,18 @@ export function futureSpend(x, zPct, years) {
   return total;
 }
 
+/** Cumulative utility spend at the end of each year 1..years: Σ_{n=1..k} x·(1+z)^(n−1). */
+export function cumulativeSpend(x, zPct, years = CASHFLOW_YEARS) {
+  const g = zPct / 100;
+  const out = [];
+  let total = 0;
+  for (let n = 1; n <= years; n++) {
+    total += x * Math.pow(1 + g, n - 1);
+    out.push(total);
+  }
+  return out;
+}
+
 /** Round to 2 decimals (kW). */
 export const roundKw = (kw) => Math.round(kw * 100) / 100;
 

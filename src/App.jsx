@@ -4,6 +4,7 @@ import Upload from './components/Upload.jsx';
 import BillDetails from './components/BillDetails.jsx';
 import UsageChart from './components/UsageChart.jsx';
 import CashFlowChart from './components/CashFlowChart.jsx';
+import SpendChart from './components/SpendChart.jsx';
 import InlineNumber from './components/InlineNumber.jsx';
 import LeadForm from './components/LeadForm.jsx';
 import BatteryPlaceholder from './components/BatteryPlaceholder.jsx';
@@ -20,6 +21,7 @@ import {
   monthlyProduction,
   costRange,
   cumulativeCashFlow,
+  cumulativeSpend,
   breakevenYear,
   CASHFLOW_YEARS,
 } from './lib/calc.js';
@@ -138,6 +140,7 @@ export default function App() {
     [avgCost, x, actualOffset, z]
   );
   const breakeven = breakevenYear(cashflow);
+  const spendSeries = useMemo(() => cumulativeSpend(x, z, CASHFLOW_YEARS), [x, z]);
 
   const hasUsage = y > 0;
   const solarReady = hasUsage && solar.status === 'ready' && kwhPerKw > 0;
@@ -185,6 +188,8 @@ export default function App() {
                   each year, in <InlineNumber value={a} onCommit={setA} min={0} max={100} label="Years" /> years you
                   will have spent <strong>{dollars(w)}</strong>.
                 </p>
+                <h2>Electricity expense over {CASHFLOW_YEARS} years</h2>
+                <SpendChart series={spendSeries} />
               </section>
             )}
 
