@@ -45,6 +45,23 @@ export default async function handler(req, res) {
     }
   }
 
+  // Google Solar API: one building-insights lookup (Duvall, WA) to confirm the key and API are enabled.
+  const gk = (process.env.GOOGLE_MAPS_API_KEY || '').trim().replace(/^['"]|['"]$/g, '');
+  if (gk) {
+    try {
+      const r = await fetch(
+        'https://solar.googleapis.com/v1/buildingInsights:findClosest?' +
+          new URLSearchParams({ 'location.latitude': '47.7426', 'location.longitude': '-121.9857', requiredQuality: 'BASE', key: gk })
+      );
+      const body = await r.json().catch(() => ({}));
+      out.google.status = r.status;
+      out.google.ok = r.ok;
+      if (!r.ok) out.google.error = body?.error ? `${body.error.status || body.error.code}: ${body.error.message}` : 'unknown error';
+    } catch (err) {
+      out.google.error = String(err?.message || err);
+    }
+  }
+
   res.setHeader('cache-control', 'no-store');
   return res.status(200).json(out);
 }

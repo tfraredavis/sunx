@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { kwh } from '../lib/format.js';
 
 const FULL_MONTHS = [
@@ -13,16 +12,13 @@ const isPse = (utility) => /puget sound energy|\bpse\b/i.test(utility || '');
  * `month` is a calendar index (0 = Jan) or null.
  */
 export default function MonthDetail({ month, consumption, production, utility }) {
-  const [open, setOpen] = useState(false);
-  useEffect(() => setOpen(false), [month]);
-
   if (month === null) return <p className="month-hint">Tap a month to see details.</p>;
 
   const cons = consumption[month];
   const prod = production[month];
   const net = cons - prod;
-  const surplus = Math.round(-net);
-  const showNetMetering = surplus > 0 && isPse(utility);
+  const rounded = Math.round(net);
+  const pse = isPse(utility);
 
   return (
     <div className="month-detail" aria-live="polite">
@@ -39,7 +35,7 @@ export default function MonthDetail({ month, consumption, production, utility })
         <div>
           <dt>Net</dt>
           <dd>
-            {Math.round(net) === 0
+            {rounded === 0
               ? '0 kWh'
               : net > 0
                 ? `${kwh(net)} kWh from the grid`
@@ -48,18 +44,16 @@ export default function MonthDetail({ month, consumption, production, utility })
         </div>
       </dl>
 
-      {showNetMetering && (
-        <>
-          <button type="button" className="info-btn" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-            <span className="info-icon" aria-hidden="true">i</span>
-            Learn more about your utility’s net metering
-          </button>
-          {open && (
-            <p className="info-text">
-              PSE stores all {kwh(surplus)} kWh of excess energy credits for you to use in later months.
-            </p>
-          )}
-        </>
+      {pse && rounded < 0 && (
+        <p className="info-text">
+          PSE offers a 1-1 net metering program, which means they bank all {kwh(-net)} kWh of excess energy produced
+          in {FULL_MONTHS[month]} for you to use in later months.
+        </p>
+      )}
+      {pse && rounded > 0 && (
+        <p className="info-text">
+          You can still spend $0 on electricity this month by using energy credits built up in previous months.
+        </p>
       )}
     </div>
   );

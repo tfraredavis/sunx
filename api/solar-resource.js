@@ -83,7 +83,9 @@ export default async function handler(req, res) {
     }
     if (!body) {
       console.error('PVWatts error', failures);
-      return res.status(502).json({ error: 'Solar production service error', detail: failures.join(' | ') });
+      return res
+        .status(502)
+        .json({ error: 'Solar production service error', detail: failures.join(' | '), lat: loc.lat, lon: loc.lon });
     }
 
     const monthly = body.outputs?.ac_monthly;

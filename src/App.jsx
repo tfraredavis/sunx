@@ -101,12 +101,14 @@ export default function App() {
         const body = await r.json().catch(() => ({}));
         if (!r.ok) {
           console.error('[sunx] solar-resource failed', r.status, body);
-          throw new Error(body.error || 'Could not estimate solar production');
+          const err = new Error(body.error || 'Could not estimate solar production');
+          err.loc = Number.isFinite(body.lat) ? { lat: body.lat, lon: body.lon } : null;
+          throw err;
         }
         return body;
       })
-      .then((data) => !cancelled && setSolar({ status: 'ready', data, error: '' }))
-      .catch((err) => !cancelled && setSolar({ status: 'error', data: null, error: err.message }));
+      .then((data) => !cancelled && setSolar({ status: 'ready', data, error: '', loc: { lat: data.lat, lon: data.lon } }))
+      .catch((err) => !cancelled && setSolar({ status: 'error', data: null, error: err.message, loc: err.loc || null }));
     return () => {
       cancelled = true;
     };
@@ -206,11 +208,11 @@ export default function App() {
               <section className="card solar">
                 {solar.status === 'loading' && <p className="muted">Estimating solar production for your address…</p>}
                 {solar.status === 'idle' && <p className="muted">Enter your home address above to size a solar system.</p>}
+                {solar.loc && <RoofImage lat={solar.loc.lat} lon={solar.loc.lon} />}
                 {solar.status === 'error' && <p className="error">{solar.error}. Check the address above.</p>}
 
                 {solarReady && (
                   <>
-                    <RoofImage lat={solar.data.lat} lon={solar.data.lon} />
                     <p className="copy">
                       A{' '}
                       <InlineNumber
