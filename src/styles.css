@@ -274,6 +274,9 @@ input[type='number'] {
 .chart-usage {
   height: 300px;
 }
+.chart-solar-cashflow {
+  height: 280px;
+}
 .chart-spend {
   height: 260px;
 }
@@ -553,4 +556,105 @@ input[type='number'] {
 
 .battery-placeholder h2 {
   margin-top: 0;
+}
+
+/* ---- Sections ---- */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  scroll-margin-top: 24px;
+}
+.section + .section {
+  margin-top: 28px;
+}
+
+/* ---- Side index (Consumption / Solar generation / Battery) ---- */
+.section-nav {
+  position: fixed;
+  top: 50%;
+  left: max(16px, calc(50% - 430px - 190px));
+  transform: translateY(-50%);
+  z-index: 20;
+}
+.section-nav ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.section-nav button {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-left: 2px solid var(--line-strong);
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.15s, border-color 0.15s;
+}
+.section-nav button:hover {
+  color: var(--ink);
+}
+.section-nav button.is-active {
+  color: var(--ink);
+  border-left-color: var(--orange);
+}
+.section-nav-num {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--orange);
+  opacity: 0.8;
+}
+/* Narrow screens: sticky bar across the top instead of a side rail. */
+@media (max-width: 1260px) {
+  .section-nav {
+    position: sticky;
+    top: 0;
+    left: auto;
+    transform: none;
+    margin: 0 -16px 8px;
+    padding: 8px 16px;
+    background: rgba(11, 11, 12, 0.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  .section-nav ol {
+    flex-direction: row;
+    gap: 4px;
+    overflow-x: auto;
+  }
+  .section-nav button {
+    width: auto;
+    white-space: nowrap;
+    border-left: 0;
+    border-bottom: 2px solid transparent;
+    padding: 6px 10px;
+  }
+  .section-nav button.is-active {
+    border-bottom-color: var(--orange);
+  }
+  .section {
+    scroll-margin-top: 64px;
+  }
+}
+@media (max-width: 480px) {
+  .section-nav-num {
+    display: none;
+  }
+  .section-nav ol {
+    justify-content: space-between;
+  }
+  .section-nav button {
+    padding: 6px 6px;
+  }
 }

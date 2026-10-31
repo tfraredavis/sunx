@@ -4,6 +4,8 @@ import Upload from './components/Upload.jsx';
 import BillDetails from './components/BillDetails.jsx';
 import UsageChart from './components/UsageChart.jsx';
 import SpendChart from './components/SpendChart.jsx';
+import SolarCashFlowChart from './components/SolarCashFlowChart.jsx';
+import SectionNav from './components/SectionNav.jsx';
 import InlineNumber from './components/InlineNumber.jsx';
 import LeadForm from './components/LeadForm.jsx';
 import BatteryPlaceholder from './components/BatteryPlaceholder.jsx';
@@ -27,9 +29,16 @@ import {
 } from './lib/calc.js';
 import { dollars, kwh } from './lib/format.js';
 
-const DEFAULT_A = 25; // years
+const DEFAULT_A = 40; // years
 const DEFAULT_C = 100; // % offset
 const MAX_C = 200;
+
+const SECTIONS = [
+  { id: 'consumption', label: 'Consumption' },
+  { id: 'solar', label: 'Solar generation' },
+  { id: 'battery', label: 'Battery' },
+];
+const SAVINGS_YEAR = 30; // "After 30 years you'll have saved…"
 
 const EMPTY_BILL = { utility: null, address: '', rate: 0, months: new Array(12).fill(0) };
 
@@ -47,7 +56,8 @@ export default function App() {
   const [solar, setSolar] = useState({ status: 'idle', data: null, error: '' });
   const [showSolar, setShowSolar] = useState(false); // solar section revealed by the button
   const [pinnedMonth, setPinnedMonth] = useState(null); // calendar index of the month tapped on the chart
-  const [cta, setCta] = useState(null); // null | 'consult' | 'battery'
+  const [showBattery, setShowBattery] = useState(false); // battery section revealed
+  const [showLeadForm, setShowLeadForm] = useState(false);
 
   // ---- Bill upload & parsing ----------------------------------------------------------
   async function handleFile(file) {
@@ -131,25 +141,20 @@ export default function App() {
   // (utility-specific net metering / buyback rules come later).
   const savingsOffset = Math.min(actualOffset, 100);
   const { low: d, high: e } = costRange(b);
-  const avgCost = (d + e) / 2;
 
   const production = useMemo(
     () => (solar.data ? monthlyProduction(b, solar.data.acMonthlyPerKw) : null),
     [b, solar.data]
   );
 
+  // Solar cash flow starts at minus the HIGH end of the cost range (conservative), then adds
+  // year-1 bill savings compounded by the utility rate increase each year.
   const cashflow = useMemo(
-    () => cumulativeCashFlow({ systemCost: avgCost, x, offsetPct: savingsOffset, zPct: z, years: CASHFLOW_YEARS }),
-    [avgCost, x, savingsOffset, z]
+    () => cumulativeCashFlow({ systemCost: e, x, offsetPct: savingsOffset, zPct: z, years: CASHFLOW_YEARS }),
+    [e, x, savingsOffset, z]
   );
   const breakeven = breakevenYear(cashflow);
   const spendSeries = useMemo(() => cumulativeSpend(x, z, CASHFLOW_YEARS), [x, z]);
-  // With solar: system cost up front + the share of the bill solar doesn't offset.
-  // Gap to spendSeries in year n equals cashflow[n].
-  const solarSpendSeries = useMemo(
-    () => spendSeries.map((v) => avgCost + v * (1 - savingsOffset / 100)),
-    [spendSeries, avgCost, savingsOffset]
-  );
 
   const hasUsage = y > 0;
   const solarReady = hasUsage && solar.status === 'ready' && kwhPerKw > 0;
@@ -171,84 +176,67 @@ export default function App() {
 
         {stage === 'ready' && (
           <>
-            <BillDetails bill={bill} manual={manual} onChange={(patch) => setBill((bl) => ({ ...bl, ...patch }))} />
+            {showSolar && (
+              <SectionNav
+                items={SECTIONS}
+                watch={`${solarReady}-${showBattery}`}
+                onSelect={(id) => id === 'battery' && setShowBattery(true)}
+              />
+            )}
 
-            {hasUsage && (
-              <section className="card usage">
-                <UsageChart
-                  months={bill.months}
-                  production={solarShown ? production : null}
-                  selected={solarShown ? pinnedMonth : null}
-                  onSelect={solarShown ? setPinnedMonth : undefined}
-                />
-                {solarShown && (
-                  <MonthDetail
-                    month={pinnedMonth}
-                    consumption={bill.months}
-                    production={production}
-                    utility={bill.utility}
+            {/* ---------------- Energy consumption ---------------- */}
+            <section id="consumption" className="section">
+              <BillDetails bill={bill} manual={manual} onChange={(patch) => setBill((bl) => ({ ...bl, ...patch }))} />
+
+              {hasUsage && (
+                <div className="card usage">
+                  <UsageChart
+                    months={bill.months}
+                    production={solarShown ? production : null}
+                    selected={solarShown ? pinnedMonth : null}
+                    onSelect={solarShown ? setPinnedMonth : undefined}
                   />
-                )}
+                  {solarShown && (
+                    <MonthDetail month={pinnedMonth} consumption={bill.months} production={production} utility={bill.utility} />
+                  )}
 
-                <p className="copy copy-hero">
-                  In a year, you spend <strong>{dollars(x)}</strong> to use <strong>{kwh(y)} kWh</strong>. If{' '}
-                  {utilityName} continues raising rates{' '}
-                  <InlineNumber value={z} onCommit={setZ} min={0} max={100} decimals={2} suffix="%" label="Annual rate increase" />{' '}
-                  each year, in <InlineNumber value={a} onCommit={setA} min={0} max={100} label="Years" /> years you
-                  will have spent <strong>{dollars(w)}</strong>.
-                </p>
-                <SpendChart
-                  series={spendSeries}
-                  solarSeries={solarShown ? solarSpendSeries : null}
-                  cashflow={solarShown ? cashflow : null}
-                />
-                {solarShown && (
-                  <>
-                    <div className="stats">
-                      <div className="stat">
-                        <span className="stat-label">Breakeven</span>
-                        <span className="stat-value">
-                          {breakeven === null ? `Beyond ${CASHFLOW_YEARS} years` : `Year ${breakeven}`}
-                        </span>
-                      </div>
-                      <div className="stat">
-                        <span className="stat-label">At 25 years</span>
-                        <span className="stat-value">{dollars(cashflow[25])}</span>
-                      </div>
-                      <div className="stat">
-                        <span className="stat-label">At 40 years</span>
-                        <span className="stat-value">{dollars(cashflow[40])}</span>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </section>
-            )}
+                  <p className="copy copy-hero">
+                    In a year, you spend <strong>{dollars(x)}</strong> to use <strong>{kwh(y)} kWh</strong>. If{' '}
+                    {utilityName} continues raising rates{' '}
+                    <InlineNumber value={z} onCommit={setZ} min={0} max={100} decimals={2} suffix="%" label="Annual rate increase" />{' '}
+                    each year, in <InlineNumber value={a} onCommit={setA} min={0} max={100} label="Years" /> years you
+                    will have spent <strong>{dollars(w)}</strong>.
+                  </p>
+                  <SpendChart series={spendSeries} />
+                </div>
+              )}
 
-            {hasUsage && !showSolar && (
-              <button
-                type="button"
-                className="btn btn-primary reveal-solar"
-                onClick={() => {
-                  setShowSolar(true);
-                  setTimeout(() => document.querySelector('.chart-spend')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
-                }}
-              >
-                <span>By comparison, see how much it will cost to generate your own power with solar</span>
-                <svg className="reveal-arrow" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-                  <path d="M12 5v14M5 12l7 7 7-7" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-            )}
+              {hasUsage && !showSolar && (
+                <button
+                  type="button"
+                  className="btn btn-primary reveal-solar"
+                  onClick={() => {
+                    setShowSolar(true);
+                    setTimeout(() => document.getElementById('solar')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+                  }}
+                >
+                  <span>By comparison, see how much it will cost to generate your own power with solar</span>
+                  <svg className="reveal-arrow" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+                    <path d="M12 5v14M5 12l7 7 7-7" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+              )}
+            </section>
 
+            {/* ---------------- Solar generation ---------------- */}
             {hasUsage && showSolar && (
-              <section className="card solar">
-                {solar.status === 'loading' && <p className="muted">Estimating solar production for your address…</p>}
-                {solar.status === 'idle' && <p className="muted">Enter your home address above to size a solar system.</p>}
-                {solar.status === 'error' && <p className="error">{solar.error}. Check the address above.</p>}
-
-                {solarReady && (
-                  <>
+              <section id="solar" className="section">
+                <div className="card solar">
+                  {solar.loc && <RoofImage lat={solar.loc.lat} lon={solar.loc.lon} />}
+                  {solar.status === 'loading' && <p className="muted">Estimating solar production for your address…</p>}
+                  {solar.status === 'idle' && <p className="muted">Enter your home address above to size a solar system.</p>}
+                  {solar.status === 'error' && <p className="error">{solar.error}. Check the address above.</p>}
+                  {solarReady && (
                     <p className="copy">
                       A{' '}
                       <InlineNumber
@@ -276,57 +264,79 @@ export default function App() {
                       </strong>
                       .
                     </p>
-                  </>
+                  )}
+                </div>
+
+                {solarReady && (
+                  <div className="card solar-cashflow">
+                    <p className="copy">
+                      {breakeven === null ? (
+                        <>This will result in a payback period of more than {CASHFLOW_YEARS} years.</>
+                      ) : (
+                        <>
+                          This will result in a <strong>{breakeven} year</strong> payback period.
+                        </>
+                      )}{' '}
+                      After {SAVINGS_YEAR} years you'll have saved <strong>{dollars(cashflow[SAVINGS_YEAR])}</strong>.
+                    </p>
+                    <SolarCashFlowChart series={cashflow} />
+                  </div>
                 )}
-                {solar.loc && <RoofImage lat={solar.loc.lat} lon={solar.loc.lon} />}
+
+                {solarReady && (
+                  <div className="cta">
+                    <button
+                      type="button"
+                      className={`btn ${showLeadForm ? 'btn-primary' : 'btn-outline'}`}
+                      onClick={() => setShowLeadForm(true)}
+                    >
+                      Submit this preliminary design to a local consultant to provide exact shading map, panel layout, and quote
+                    </button>
+                    <span className="cta-or">OR</span>
+                    <button
+                      type="button"
+                      className={`btn ${showBattery ? 'btn-primary' : 'btn-outline'}`}
+                      onClick={() => {
+                        setShowBattery(true);
+                        setTimeout(() => document.getElementById('battery')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+                      }}
+                    >
+                      Add batteries for off-grid capabilities
+                    </button>
+                  </div>
+                )}
+
+                {solarReady && showLeadForm && (
+                  <LeadForm
+                    initialAddress={bill.address}
+                    design={{
+                      utility: bill.utility,
+                      address: bill.address,
+                      energyChargePerKwh: bill.rate,
+                      monthlyKwh: bill.months,
+                      annualKwh: y,
+                      annualCost: x,
+                      rateEscalationPct: z,
+                      years: a,
+                      systemKw: b,
+                      offsetPct: c,
+                      costLow: d,
+                      costHigh: e,
+                      monthlyProductionKwh: production,
+                      breakevenYear: breakeven,
+                      cashflow30: cashflow[SAVINGS_YEAR],
+                    }}
+                  />
+                )}
               </section>
             )}
 
-            {solarShown && (
-              <section className="cta">
-                <button
-                  type="button"
-                  className={`btn ${cta === 'consult' ? 'btn-primary' : 'btn-outline'}`}
-                  onClick={() => setCta('consult')}
-                >
-                  Submit this preliminary design to a local consultant to provide exact shading map, panel layout, and quote
-                </button>
-                <span className="cta-or">OR</span>
-                <button
-                  type="button"
-                  className={`btn ${cta === 'battery' ? 'btn-primary' : 'btn-outline'}`}
-                  onClick={() => setCta('battery')}
-                >
-                  Add batteries for off-grid capabilities
-                </button>
+            {/* ---------------- Battery storage ---------------- */}
+            {hasUsage && showSolar && showBattery && (
+              <section id="battery" className="section">
+                <BatteryPlaceholder />
               </section>
             )}
-
-            {solarShown && cta === 'consult' && (
-              <LeadForm
-                initialAddress={bill.address}
-                design={{
-                  utility: bill.utility,
-                  address: bill.address,
-                  energyChargePerKwh: bill.rate,
-                  monthlyKwh: bill.months,
-                  annualKwh: y,
-                  annualCost: x,
-                  rateEscalationPct: z,
-                  years: a,
-                  systemKw: b,
-                  offsetPct: c,
-                  costLow: d,
-                  costHigh: e,
-                  monthlyProductionKwh: production,
-                  breakevenYear: breakeven,
-                  cashflow25: cashflow[25],
-                  cashflow40: cashflow[40],
-                }}
-              />
-            )}
-
-            {solarShown && cta === 'battery' && <BatteryPlaceholder />}
           </>
         )}
       </main>

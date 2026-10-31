@@ -4,8 +4,8 @@ import { DISPLAY_MONTHS, MONTH_LABELS } from '../lib/calc.js';
 import { kwh } from '../lib/format.js';
 
 /**
- * Consumption bars (Apr → Mar). When `production` is given, translucent orange production bars
- * are drawn over the consumption bars (same slot, not side by side) so both stay visible.
+ * Consumption bars (Apr → Mar). When `production` is given, an orange production bar is drawn
+ * to the right of each month's consumption bar.
  * Tooltip: consumption, production, and net for the hovered month.
  */
 export default function UsageChart({ months, production, selected = null, onSelect }) {
@@ -13,16 +13,17 @@ export default function UsageChart({ months, production, selected = null, onSele
   const cons = DISPLAY_MONTHS.map((i) => months[i]);
   const prod = production ? DISPLAY_MONTHS.map((i) => production[i]) : null;
 
+  // Bars are half the old width. With solar, each month shows the gray consumption bar with a
+  // separate orange production bar to its right (grouped side by side, same width each).
   const datasets = [
     {
       label: 'Consumption',
       data: cons,
       backgroundColor: COLORS.bar,
       hoverBackgroundColor: '#5C5C63',
-      borderRadius: 4,
-      maxBarThickness: 44,
-      grouped: false,
-      order: 2,
+      borderRadius: 3,
+      barPercentage: prod ? 0.9 : 0.45,
+      maxBarThickness: 22,
     },
   ];
 
@@ -30,14 +31,13 @@ export default function UsageChart({ months, production, selected = null, onSele
     datasets.push({
       label: 'Solar production',
       data: prod,
-      backgroundColor: 'rgba(216, 90, 48, 0.55)',
-      hoverBackgroundColor: 'rgba(216, 90, 48, 0.7)',
+      backgroundColor: COLORS.orange,
+      hoverBackgroundColor: '#E46A40',
       borderColor: COLORS.orange,
-      borderWidth: 1.5,
-      borderRadius: 4,
-      maxBarThickness: 44,
-      grouped: false,
-      order: 1,
+      borderWidth: 0,
+      borderRadius: 3,
+      barPercentage: 0.9,
+      maxBarThickness: 22,
     });
   }
 
@@ -46,7 +46,10 @@ export default function UsageChart({ months, production, selected = null, onSele
   const outline = (base) => cons.map((_, i) => (i === selPos ? '#FFFFFF' : base));
   datasets[0].borderColor = outline('rgba(0,0,0,0)');
   datasets[0].borderWidth = cons.map((_, i) => (i === selPos ? 2 : 0));
-  if (prod) datasets[1].borderColor = outline(COLORS.orange);
+  if (prod) {
+    datasets[1].borderColor = outline(COLORS.orange);
+    datasets[1].borderWidth = prod.map((_, i) => (i === selPos ? 2 : 0));
+  }
 
   const options = {
     responsive: true,
