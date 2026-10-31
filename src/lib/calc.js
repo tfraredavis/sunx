@@ -113,3 +113,35 @@ export function breakevenYear(series) {
 }
 
 export const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+
+/** Yearly cash flows (not cumulative): [−systemCost, savings yr1, …, savings yrN]. */
+export function yearlyCashFlows({ systemCost, x, offsetPct, zPct, years }) {
+  const g = zPct / 100;
+  const out = [-systemCost];
+  for (let n = 1; n <= years; n++) out.push(x * (offsetPct / 100) * Math.pow(1 + g, n - 1));
+  return out;
+}
+
+/**
+ * Internal rate of return (%) of yearly cash flows, by bisection on NPV = 0.
+ * Can be negative when savings never cover the cost. Returns null when there's no solution
+ * (e.g. no savings at all).
+ */
+export function irr(flows) {
+  const npv = (r) => flows.reduce((s, cf, t) => s + cf / Math.pow(1 + r, t), 0);
+  let lo = -0.99;
+  let hi = 10; // 1000%
+  let fLo = npv(lo);
+  const fHi = npv(hi);
+  if (!Number.isFinite(fLo) || !Number.isFinite(fHi) || fLo * fHi > 0) return null;
+  for (let i = 0; i < 200; i++) {
+    const mid = (lo + hi) / 2;
+    const f = npv(mid);
+    if (Math.abs(f) < 1e-7) return mid * 100;
+    if (f * fLo > 0) {
+      lo = mid;
+      fLo = f;
+    } else hi = mid;
+  }
+  return ((lo + hi) / 2) * 100;
+}

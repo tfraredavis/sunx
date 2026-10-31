@@ -88,3 +88,19 @@ test('savings above 100% offset equal a 100% system, just at a higher cost', () 
   for (let n = 1; n <= 40; n++) close(s150[n] - s150[n - 1], s100[n] - s100[n - 1]);
   close(s100[40] - s150[40], 10000);
 });
+
+test('irr: textbook cases', async () => {
+  const { irr, yearlyCashFlows } = await import('../src/lib/calc.js');
+  // −100 then +110 after one year → 10%
+  close(irr([-100, 110]), 10, 1e-6);
+  // −1000, then 5 × 300 → about 15.24%
+  close(irr([-1000, 300, 300, 300, 300, 300]), 15.2382, 1e-3);
+  // never pays back → negative IRR; no savings at all → null
+  assert.ok(irr([-1000, 10, 10]) < 0);
+  assert.equal(irr([-1000, 0, 0]), null);
+  // flows helper: year 0 negative, year 1 = x·offset
+  const f = yearlyCashFlows({ systemCost: 20000, x: 2000, offsetPct: 100, zPct: 5, years: 30 });
+  assert.equal(f.length, 31);
+  close(f[1], 2000);
+  close(f[2], 2100);
+});

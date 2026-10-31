@@ -25,6 +25,8 @@ import {
   cumulativeCashFlow,
   cumulativeSpend,
   breakevenYear,
+  yearlyCashFlows,
+  irr,
   CASHFLOW_YEARS,
 } from './lib/calc.js';
 import { dollars, kwh } from './lib/format.js';
@@ -39,6 +41,9 @@ const SECTIONS = [
   { id: 'battery', label: 'Battery' },
 ];
 const SAVINGS_YEAR = 30; // "After 30 years you'll have saved…"
+// Long-run average annual return of the US stock market (S&P 500, nominal, ~10%).
+// The "better than the stock market" line only shows when the solar return beats it.
+const STOCK_MARKET_PCT = 10;
 
 const EMPTY_BILL = { utility: null, address: '', rate: 0, months: new Array(12).fill(0) };
 
@@ -154,6 +159,11 @@ export default function App() {
     [e, x, savingsOffset, z]
   );
   const breakeven = breakevenYear(cashflow);
+  // Annual return (IRR) over the same 30 years the chart shows.
+  const solarIrr = useMemo(
+    () => irr(yearlyCashFlows({ systemCost: e, x, offsetPct: savingsOffset, zPct: z, years: SAVINGS_YEAR })),
+    [e, x, savingsOffset, z]
+  );
   const spendSeries = useMemo(() => cumulativeSpend(x, z, CASHFLOW_YEARS), [x, z]);
 
   const hasUsage = y > 0;
@@ -280,6 +290,12 @@ export default function App() {
                       After {SAVINGS_YEAR} years you'll have saved <strong>{dollars(cashflow[SAVINGS_YEAR])}</strong>.
                     </p>
                     <SolarCashFlowChart series={cashflow.slice(0, SAVINGS_YEAR + 1)} />
+                    {solarIrr !== null && solarIrr > 0 && (
+                      <p className="copy">
+                        This is an annual return of <strong>{solarIrr.toFixed(1)}%</strong>.
+                        {solarIrr > STOCK_MARKET_PCT && <> That is better than the stock market.</>}
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -325,6 +341,7 @@ export default function App() {
                       monthlyProductionKwh: production,
                       breakevenYear: breakeven,
                       cashflow30: cashflow[SAVINGS_YEAR],
+                      annualReturnPct: solarIrr,
                     }}
                   />
                 )}
