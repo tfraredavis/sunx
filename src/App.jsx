@@ -279,7 +279,7 @@ export default function App() {
                       )}{' '}
                       After {SAVINGS_YEAR} years you'll have saved <strong>{dollars(cashflow[SAVINGS_YEAR])}</strong>.
                     </p>
-                    <SolarCashFlowChart series={cashflow} />
+                    <SolarCashFlowChart series={cashflow.slice(0, SAVINGS_YEAR + 1)} />
                   </div>
                 )}
 
