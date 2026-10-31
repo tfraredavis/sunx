@@ -8,7 +8,7 @@ import SolarCashFlowChart from './components/SolarCashFlowChart.jsx';
 import SectionNav from './components/SectionNav.jsx';
 import InlineNumber from './components/InlineNumber.jsx';
 import LeadForm from './components/LeadForm.jsx';
-import BatteryPlaceholder from './components/BatteryPlaceholder.jsx';
+import BatterySection from './components/BatterySection.jsx';
 import MonthDetail from './components/MonthDetail.jsx';
 import RoofImage from './components/RoofImage.jsx';
 import { fileToPayload } from './lib/fileToPayload.js';
@@ -351,7 +351,15 @@ export default function App() {
             {/* ---------------- Battery storage ---------------- */}
             {hasUsage && showSolar && showBattery && (
               <section id="battery" className="section">
-                <BatteryPlaceholder />
+                <BatterySection
+                  monthlyKwh={bill.months}
+                  production={solarReady ? production : null}
+                  utility={bill.utility}
+                  solarCost={e}
+                  solarYear1={x * (savingsOffset / 100)}
+                  zPct={z}
+                  solarReady={solarReady}
+                />
               </section>
             )}
           </>

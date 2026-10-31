@@ -130,8 +130,20 @@ Name, Email Address, Phone, Home Address (prefilled from the bill), all required
 `submitLead()` in `src/lib/submitLead.js`, which is intentionally a no-op for now. The payload already
 includes the contact info and all design data for future consultant routing by ZIP.
 
-### Batteries
-“Add batteries for off-grid capabilities” opens a placeholder section.
+### Batteries — `src/components/BatterySection.jsx`, `src/lib/battery.js`, `api/parse-panel.js`
+1. **Panel photos** (any number; JPG/PNG/PDF). Each file is read by Claude (`/api/parse-panel`): circuit label (newest,
+   not crossed-out), amps, poles, slot, and a backup category (critical / comfort / other / unknown). "Skip" is allowed.
+2. **Panel graphic**: two columns in slot order; tap to put a circuit on backup (dark orange) or shed it (gray).
+3. **Critical** selects critical circuits; **Comfort** adds water heating, heating and cooling.
+   Outage load: Critical = 10 kWh/day (editable); Comfort = 50% (editable) of each month's daily use from the bill.
+4. **Battery count** (15 kWh / 10 kW each), editable. Recommendation from circuits on backup:
+   any breaker > 60A → 2; three or more 50/60A → 2; four or more 40/50/60A → 2; otherwise 1.
+5. **Backup duration** per month (Apr→Mar): battery hours = kWh ÷ daily load × 24; solar hours = daily solar ÷ daily load × 24;
+   indefinite (∞) when daily solar ≥ daily load.
+6. **Cost**: $10,000 per battery (placeholder). **30-year payback** for solar (high-end cost) + batteries: solar savings
+   compound by the rate increase; PSE Flex Batteries pays $1,500 per battery in year 1, then $500 per battery per year.
+7. **Summary**: payback year, percentage points above a ~10% stock market return (only if above), and the longest stretch of
+   consecutive indefinite-backup months.
 
 ---
 
