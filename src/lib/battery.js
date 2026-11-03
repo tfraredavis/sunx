@@ -11,7 +11,7 @@ export const CRITICAL_KWH_DEFAULT = 10; // kWh/day for the Critical bucket
 export const COMFORT_PCT_DEFAULT = 50; // % of each month's normal daily use for the Comfort bucket
 
 // Grid services: PSE Flex Batteries, per battery (placeholder for the utility grid-services database).
-export const GRID_SERVICES = { name: 'PSE Flex Battery incentive', year1: 1500, recurring: 500 };
+export const GRID_SERVICES = { name: 'PSE Battery Flex Incentive', year1: 1500, recurring: 500 };
 
 export const DAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 export const MONTH_NAMES = [

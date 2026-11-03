@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import PanelUpload from './PanelUpload.jsx';
 import PanelGraphic from './PanelGraphic.jsx';
 import BackupChart from './BackupChart.jsx';
 import BatteryPaybackChart, { PAYBACK_COLORS } from './BatteryPaybackChart.jsx';
 import InlineNumber from './InlineNumber.jsx';
+import LeadForm from './LeadForm.jsx';
 import {
   BATTERY_KWH,
   BATTERY_KW,
@@ -34,7 +35,7 @@ const BUCKET = { critical: ['critical'], comfort: ['critical', 'comfort'] };
  *  #battery   — panel photo + graphic (left) beside load selection, battery count and backup duration (right)
  *  #financial — combined solar + battery payback chart and the summary
  */
-export default function BatterySection({ monthlyKwh, production, utility, solarCost, solarYear1, zPct, solarReady }) {
+export default function BatterySection({ monthlyKwh, production, utility, solarCost, solarYear1, zPct, solarReady, address, solarDesign }) {
   const [panels, setPanels] = useState([]);
   const [skipped, setSkipped] = useState(false);
   const [mode, setMode] = useState(null); // 'critical' | 'comfort'
@@ -42,6 +43,28 @@ export default function BatterySection({ monthlyKwh, production, utility, solarC
   const [criticalKwh, setCriticalKwh] = useState(CRITICAL_KWH_DEFAULT);
   const [comfortPct, setComfortPct] = useState(COMFORT_PCT_DEFAULT);
   const [batteryOverride, setBatteryOverride] = useState(null);
+  const [showFinancial, setShowFinancial] = useState(false);
+  const [leadAt, setLeadAt] = useState(null); // where the consultant form is open: 'battery' | 'financial' | null
+
+  // Keep the right column (selection, sizing, backup chart) in view next to a long panel. If the column is
+  // taller than the screen, it pins by its bottom edge so the backup chart stays visible.
+  const rightRef = useRef(null);
+  useEffect(() => {
+    const el = rightRef.current;
+    if (!el) return;
+    const place = () => {
+      const top = Math.min(72, window.innerHeight - el.offsetHeight - 16);
+      el.style.top = `${top}px`;
+    };
+    place();
+    const ro = new ResizeObserver(place);
+    ro.observe(el);
+    window.addEventListener('resize', place);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', place);
+    };
+  });
 
   const allBreakers = useMemo(
     () => panels.flatMap((p, pi) => p.breakers.map((b, bi) => ({ ...b, id: `${pi}-${bi}` }))),
@@ -101,6 +124,30 @@ export default function BatterySection({ monthlyKwh, production, utility, solarC
       ? `${summaryParts.slice(0, -1).join(', ')}, and ${summaryParts[summaryParts.length - 1]}`
       : summaryParts.join(' and ');
 
+  const incentiveName = pse ? GRID_SERVICES.name : 'Grid services incentive (estimated from PSE Battery Flex)';
+  const incentiveSentence = `${incentiveName} returns ${dollars(batteries * GRID_SERVICES.year1)} in Year 1 and ${dollars(
+    batteries * GRID_SERVICES.recurring
+  )} in each additional year.`;
+
+  const leadDesign = {
+    ...solarDesign,
+    batteries,
+    batteryKwh,
+    batteryKw: batteries * BATTERY_KW,
+    batteryCost: batteryCost(batteries),
+    backupMode: mode,
+    outageKwhPerDay: loadPerDay,
+    circuitsOnBackup: selectedBreakers.map((b) => ({ label: b.label, amps: b.amps, poles: b.poles })),
+    combinedPaybackYear: payback,
+    combinedNet30: rows[rows.length - 1].net,
+    combinedAnnualReturnPct: totalIrr,
+  };
+
+  function openFinancial() {
+    setShowFinancial(true);
+    setTimeout(() => document.getElementById('financial')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+  }
+
   return (
     <>
       {/* ================= Battery ================= */}
@@ -109,7 +156,6 @@ export default function BatterySection({ monthlyKwh, production, utility, solarC
           {/* Left: panel */}
           <div className="battery-left">
             <div className="card">
-              <h2 className="card-title">Your electrical panel</h2>
               {!skipped && (
                 <PanelUpload
                   hasPanels={panels.length > 0}
@@ -120,10 +166,7 @@ export default function BatterySection({ monthlyKwh, production, utility, solarC
               {panels.length > 0 && (
                 <>
                   <PanelGraphic panels={panels} selected={selected} onToggle={toggle} />
-                  <p className="footnote">
-                    Tap any circuit to put it on backup (orange) or shed it (gray). Circuits change the number of batteries needed; the
-                    daily energy estimate will follow individual circuits once our load database is ready.
-                  </p>
+                  <p className="footnote">Tap any circuit to put it on backup (orange) or shed it (gray).</p>
                 </>
               )}
               {skipped && <p className="muted">No panel photo — we'll use typical values for your home.</p>}
@@ -132,7 +175,7 @@ export default function BatterySection({ monthlyKwh, production, utility, solarC
 
           {/* Right: load selection + backup duration (stays in view while scrolling the panel) */}
           {ready && (
-            <div className="battery-right">
+            <div className="battery-right" ref={rightRef}>
               <div className="card">
                 <h2 className="card-title">What do you want to keep running during an outage?</h2>
                 <div className="bucket-choice">
@@ -165,43 +208,46 @@ export default function BatterySection({ monthlyKwh, production, utility, solarC
                   </p>
                 )}
 
-                {mode && (
-                  <>
-                    <div className="battery-count">
-                      <span>Batteries</span>
-                      <div className="stepper">
-                        <button type="button" aria-label="Fewer batteries" onClick={() => setBatteryOverride(Math.max(1, batteries - 1))}>
-                          −
-                        </button>
-                        <span className="stepper-value">{batteries}</span>
-                        <button type="button" aria-label="More batteries" onClick={() => setBatteryOverride(Math.min(10, batteries + 1))}>
-                          +
-                        </button>
-                      </div>
-                      <span className="muted">
-                        {batteryKwh} kWh storage · {batteries * BATTERY_KW} kW output
-                      </span>
-                    </div>
-                    {underPowered && (
-                      <p className="warning" role="status">
-                        Peak load may exceed what {batteries} {batteries === 1 ? 'battery' : 'batteries'} can supply.
-                      </p>
-                    )}
-                  </>
-                )}
               </div>
+
+              {mode && (
+                <div className="card">
+                  <h2 className="card-title">Battery sizing</h2>
+                  <div className="battery-count">
+                    <span>Batteries</span>
+                    <div className="stepper">
+                      <button type="button" aria-label="Fewer batteries" onClick={() => setBatteryOverride(Math.max(1, batteries - 1))}>
+                        −
+                      </button>
+                      <span className="stepper-value">{batteries}</span>
+                      <button type="button" aria-label="More batteries" onClick={() => setBatteryOverride(Math.min(10, batteries + 1))}>
+                        +
+                      </button>
+                    </div>
+                    <span className="muted">
+                      {batteryKwh} kWh storage · {batteries * BATTERY_KW} kW output
+                    </span>
+                  </div>
+                  {underPowered && (
+                    <p className="warning" role="status">
+                      Peak load may exceed what {batteries} {batteries === 1 ? 'battery' : 'batteries'} can supply.
+                    </p>
+                  )}
+                  <p className="copy copy-sm">
+                    Cost: <strong>{dollars(batteryCost(batteries))}</strong>
+                  </p>
+                  <p className="copy copy-sm sizing-incentive">{incentiveSentence}</p>
+                </div>
+              )}
 
               {hours && (
                 <div className="card">
-                  <h2 className="card-title">
-                    Battery backup duration ({batteryKwh} kWh of batteries,{' '}
-                    {mode === 'critical' ? `${criticalKwh} kWh/day` : `${comfortPct}% of normal use`})
-                  </h2>
+                  <h2 className="card-title card-title-tight">Battery backup duration</h2>
+                  <p className="card-subtitle">
+                    {batteryKwh} kWh of batteries, {mode === 'critical' ? `${criticalKwh} kWh/day` : `${comfortPct}% of normal use`}
+                  </p>
                   {!solarReady && <p className="muted">Solar recharge isn't included because solar production isn't available yet.</p>}
                   <BackupChart hours={hours} />
-                  <p className="footnote">
-                    ∞ means solar generation recharges the battery faster than usage drains it, providing indefinite backup power.
-                  </p>
                   <p className="copy copy-sm">
                     {Number.isFinite(winterMin)
                       ? `During the winter, you'll get at least ${formatDuration(winterMin)} of backup.`
@@ -214,37 +260,56 @@ export default function BatterySection({ monthlyKwh, production, utility, solarC
                   </p>
                 </div>
               )}
+
+              {hours && (
+                <div className="cta">
+                  <button type="button" className={`btn ${showFinancial ? 'btn-primary' : 'btn-outline'}`} onClick={openFinancial}>
+                    See financial return
+                  </button>
+                  <span className="cta-or">OR</span>
+                  <button
+                    type="button"
+                    className={`btn ${leadAt === 'battery' ? 'btn-primary' : 'btn-outline'}`}
+                    onClick={() => setLeadAt('battery')}
+                  >
+                    Submit design to local consultant
+                  </button>
+                </div>
+              )}
+              {hours && leadAt === 'battery' && <LeadForm initialAddress={address} design={leadDesign} />}
             </div>
           )}
         </div>
       </section>
 
       {/* ================= Financial return ================= */}
-      {hours && (
+      {hours && showFinancial && (
         <section id="financial" className="section">
           <div className="card">
             <h2 className="card-title">{PAYBACK_YEARS}-year financial payback</h2>
             <div className="payback-stats">
-              <span>
-                Solar <strong>{dollars(solarCost)}</strong>
-              </span>
-              <span>
-                Batteries <strong>{dollars(batteryCost(batteries))}</strong>
-              </span>
-              <span>
-                Total cost <strong>{dollars(rows[0].total)}</strong>
-              </span>
-              <span>
-                Payback <strong>{payback === null ? `${PAYBACK_YEARS}+ years` : `${payback} years`}</strong>
-              </span>
-              <span>
-                {PAYBACK_YEARS}-year net <strong>{dollars(rows[rows.length - 1].net)}</strong>
-              </span>
-              {totalIrr !== null && (
+              <div className="payback-row">
                 <span>
-                  Annual return <strong>{totalIrr.toFixed(1)}%</strong>
+                  Solar <strong>{dollars(solarCost)}</strong>
                 </span>
-              )}
+                <span>
+                  Batteries <strong>{dollars(batteryCost(batteries))}</strong>
+                </span>
+                <span>
+                  Total cost <strong>{dollars(rows[0].total)}</strong>
+                </span>
+              </div>
+              <div className="payback-row">
+                <span>
+                  Payback <strong>{payback === null ? `${PAYBACK_YEARS}+ years` : `${payback} years`}</strong>
+                </span>
+                <span>
+                  {PAYBACK_YEARS}-year net <strong>{dollars(rows[rows.length - 1].net)}</strong>
+                </span>
+                <span>
+                  Annual return <strong>{totalIrr === null ? '—' : `${totalIrr.toFixed(1)}%`}</strong>
+                </span>
+              </div>
             </div>
             <BatteryPaybackChart rows={rows} paybackYear={payback} />
             <ul className="payback-legend">
@@ -261,8 +326,8 @@ export default function BatterySection({ monthlyKwh, production, utility, solarC
               <li>
                 <i style={{ background: PAYBACK_COLORS.incentive }} />
                 <span>
-                  <strong>{pse ? GRID_SERVICES.name : 'Grid services incentive (estimated from PSE Flex Batteries)'}</strong> returns{' '}
-                  {dollars(batteries * GRID_SERVICES.year1)} in Year 1 then {dollars(batteries * GRID_SERVICES.recurring)} recurring per year.
+                  <strong>{incentiveName}</strong> returns {dollars(batteries * GRID_SERVICES.year1)} in Year 1 and{' '}
+                  {dollars(batteries * GRID_SERVICES.recurring)} in each additional year.
                 </span>
               </li>
             </ul>
@@ -271,6 +336,15 @@ export default function BatterySection({ monthlyKwh, production, utility, solarC
           <div className="card summary">
             <p className="copy copy-hero">In summary, your solar and battery system {summary}.</p>
           </div>
+
+          <button
+            type="button"
+            className={`btn ${leadAt === 'financial' ? 'btn-primary' : 'btn-outline'} btn-wide`}
+            onClick={() => setLeadAt('financial')}
+          >
+            Submit to a local consultant to review design and provide exact quote
+          </button>
+          {leadAt === 'financial' && <LeadForm initialAddress={address} design={leadDesign} />}
         </section>
       )}
     </>

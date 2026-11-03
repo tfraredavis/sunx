@@ -31,7 +31,7 @@ import {
 } from './lib/calc.js';
 import { dollars, kwh } from './lib/format.js';
 
-const DEFAULT_A = 40; // years
+const DEFAULT_A = 30; // years
 const DEFAULT_C = 100; // % offset
 const MAX_C = 200;
 
@@ -165,7 +165,28 @@ export default function App() {
     () => irr(yearlyCashFlows({ systemCost: e, x, offsetPct: savingsOffset, zPct: z, years: SAVINGS_YEAR })),
     [e, x, savingsOffset, z]
   );
-  const spendSeries = useMemo(() => cumulativeSpend(x, z, CASHFLOW_YEARS), [x, z]);
+  // Consumption cost chart follows the selected number of years (a).
+  const spendSeries = useMemo(() => cumulativeSpend(x, z, a), [x, z, a]);
+
+  // Design data sent with a consultant request.
+  const solarDesign = {
+    utility: bill.utility,
+    address: bill.address,
+    energyChargePerKwh: bill.rate,
+    monthlyKwh: bill.months,
+    annualKwh: y,
+    annualCost: x,
+    rateEscalationPct: z,
+    years: a,
+    systemKw: b,
+    offsetPct: c,
+    costLow: d,
+    costHigh: e,
+    monthlyProductionKwh: production,
+    breakevenYear: breakeven,
+    cashflow30: cashflow[SAVINGS_YEAR],
+    annualReturnPct: solarIrr,
+  };
 
   const hasUsage = y > 0;
   const solarReady = hasUsage && solar.status === 'ready' && kwhPerKw > 0;
@@ -191,7 +212,7 @@ export default function App() {
               <SectionNav
                 items={SECTIONS}
                 watch={`${solarReady}-${showBattery}`}
-                onSelect={(id) => (id === 'battery' || id === 'financial') && setShowBattery(true)}
+                onSelect={() => {}}
               />
             )}
 
@@ -218,7 +239,7 @@ export default function App() {
                     each year, in <InlineNumber value={a} onCommit={setA} min={0} max={100} label="Years" /> years you
                     will have spent <strong>{dollars(w)}</strong>.
                   </p>
-                  <SpendChart series={spendSeries} />
+                  {a > 0 && <SpendChart series={spendSeries} />}
                 </div>
               )}
 
@@ -326,24 +347,7 @@ export default function App() {
                 {solarReady && showLeadForm && (
                   <LeadForm
                     initialAddress={bill.address}
-                    design={{
-                      utility: bill.utility,
-                      address: bill.address,
-                      energyChargePerKwh: bill.rate,
-                      monthlyKwh: bill.months,
-                      annualKwh: y,
-                      annualCost: x,
-                      rateEscalationPct: z,
-                      years: a,
-                      systemKw: b,
-                      offsetPct: c,
-                      costLow: d,
-                      costHigh: e,
-                      monthlyProductionKwh: production,
-                      breakevenYear: breakeven,
-                      cashflow30: cashflow[SAVINGS_YEAR],
-                      annualReturnPct: solarIrr,
-                    }}
+                    design={solarDesign}
                   />
                 )}
               </section>
@@ -359,6 +363,8 @@ export default function App() {
                 solarYear1={x * (savingsOffset / 100)}
                 zPct={z}
                 solarReady={solarReady}
+                address={bill.address}
+                solarDesign={solarDesign}
               />
             )}
           </>

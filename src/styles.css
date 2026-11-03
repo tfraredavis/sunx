@@ -959,3 +959,31 @@ input[type='number'] {
 .battery-right .chart-backup {
   height: 320px;
 }
+
+.card-title-tight {
+  margin-bottom: 2px;
+}
+.card-subtitle {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.sizing-incentive {
+  margin-top: 6px;
+  color: var(--muted);
+}
+.payback-stats {
+  flex-direction: column;
+  gap: 6px;
+}
+.payback-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+}
+.btn-wide {
+  width: 100%;
+}
+.battery-right .cta .btn {
+  flex: 1 1 200px;
+}
