@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 /**
- * Side index for the three sections. Clicking an item scrolls to it; the item for the
+ * Side index for the page sections. Clicking an item scrolls to it; the item for the
  * section currently on screen is highlighted. On narrow screens it becomes a sticky top bar.
  * `items`: [{ id, label }]. `onSelect(id)` runs before scrolling (e.g. to reveal the battery section).
  * `watch`: change it when sections appear so they get observed.
@@ -34,8 +34,15 @@ export default function SectionNav({ items, onSelect, watch }) {
   function go(id) {
     onSelect?.(id);
     setActive(id);
-    // Wait a tick so a newly revealed section exists before scrolling.
-    setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 30);
+    // Wait a tick so a newly revealed section exists before scrolling. If the section isn't available
+    // yet (e.g. Financial return before a backup option is chosen), go to the nearest earlier one.
+    setTimeout(() => {
+      const idx = items.findIndex((it) => it.id === id);
+      for (let i = idx; i >= 0; i--) {
+        const el = document.getElementById(items[i].id);
+        if (el) return el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 30);
   }
 
   return (

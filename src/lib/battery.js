@@ -2,7 +2,11 @@
 
 export const BATTERY_KWH = 15; // energy per battery
 export const BATTERY_KW = 10; // power per battery
-export const BATTERY_COST = 10000; // $ per battery (placeholder until real pricing)
+export const FIRST_BATTERY_COST = 17000; // $ for the first battery (placeholder pricing)
+export const ADDITIONAL_BATTERY_COST = 10000; // $ for each additional battery
+
+/** Installed cost of n batteries: first $17,000, each additional $10,000. */
+export const batteryCost = (n) => (n > 0 ? FIRST_BATTERY_COST + (n - 1) * ADDITIONAL_BATTERY_COST : 0);
 export const CRITICAL_KWH_DEFAULT = 10; // kWh/day for the Critical bucket
 export const COMFORT_PCT_DEFAULT = 50; // % of each month's normal daily use for the Comfort bucket
 
@@ -85,8 +89,8 @@ export function formatDuration(hours) {
  * Returns per year: cumulative solar savings, cumulative incentives, total cost, and net cumulative cash flow.
  * Solar savings: year-1 savings × (1+z)^(n−1). Incentives per battery: year1 in year 1, recurring every later year.
  */
-export function combinedCashFlow({ solarCost, batteries, batteryCost = BATTERY_COST, solarYear1, zPct, years, grid = GRID_SERVICES }) {
-  const total = solarCost + batteries * batteryCost;
+export function combinedCashFlow({ solarCost, batteries, solarYear1, zPct, years, grid = GRID_SERVICES }) {
+  const total = solarCost + batteryCost(batteries);
   const g = zPct / 100;
   const rows = [{ year: 0, solarCum: 0, incentiveCum: 0, total, net: -total }];
   let solarCum = 0;

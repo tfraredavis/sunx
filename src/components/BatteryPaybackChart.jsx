@@ -79,7 +79,7 @@ export default function BatteryPaybackChart({ rows, paybackYear }) {
             const r = rows[items[0].dataIndex];
             return [
               ` Solar savings so far: ${dollars(r.solarCum)}`,
-              ` Incentives so far: ${dollars(r.incentiveCum)}`,
+              ` Battery incentives so far: ${dollars(r.incentiveCum)}`,
               ` Net: ${dollars(r.net)}`,
             ];
           },

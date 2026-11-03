@@ -140,7 +140,7 @@ includes the contact info and all design data for future consultant routing by Z
    any breaker > 60A → 2; three or more 50/60A → 2; four or more 40/50/60A → 2; otherwise 1.
 5. **Backup duration** per month (Apr→Mar): battery hours = kWh ÷ daily load × 24; solar hours = daily solar ÷ daily load × 24;
    indefinite (∞) when daily solar ≥ daily load.
-6. **Cost**: $10,000 per battery (placeholder). **30-year payback** for solar (high-end cost) + batteries: solar savings
+6. **Cost**: first battery $17,000, each additional $10,000 (placeholder). **30-year payback** for solar (high-end cost) + batteries: solar savings
    compound by the rate increase; PSE Flex Batteries pays $1,500 per battery in year 1, then $500 per battery per year.
 7. **Summary**: payback year, percentage points above a ~10% stock market return (only if above), and the longest stretch of
    consecutive indefinite-backup months.

@@ -573,7 +573,7 @@ input[type='number'] {
 .section-nav {
   position: fixed;
   top: 50%;
-  left: max(16px, calc(50% - 430px - 190px));
+  left: max(16px, calc(50% - 590px - 190px));
   transform: translateY(-50%);
   z-index: 20;
 }
@@ -616,7 +616,7 @@ input[type='number'] {
   opacity: 0.8;
 }
 /* Narrow screens: sticky bar across the top instead of a side rail. */
-@media (max-width: 1260px) {
+@media (max-width: 1600px) {
   .section-nav {
     position: sticky;
     top: 0;
@@ -908,4 +908,54 @@ input[type='number'] {
   .chart-battery-payback {
     height: 340px;
   }
+}
+
+/* ---- Battery layout: panel on the left, selection + backup duration on the right ---- */
+.battery-layout {
+  display: grid;
+  gap: 20px;
+}
+@media (min-width: 1000px) {
+  .battery-layout {
+    /* Break out of the 860px page column so the panel and the chart fit side by side. */
+    width: min(1180px, calc(100vw - 32px));
+    margin-left: calc((100% - min(1180px, calc(100vw - 32px))) / 2);
+  }
+  .battery-layout.is-ready {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    align-items: start;
+  }
+  .battery-right {
+    position: sticky;
+    top: 72px;
+  }
+}
+@media (min-width: 1601px) {
+  .battery-right {
+    top: 24px;
+  }
+}
+.battery-left,
+.battery-right {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+.copy-sm {
+  font-size: 16px;
+  line-height: 1.55;
+}
+.warning {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffd2b8;
+  background: rgba(216, 90, 48, 0.16);
+  border: 1px solid rgba(216, 90, 48, 0.55);
+}
+.battery-right .chart-backup {
+  height: 320px;
 }

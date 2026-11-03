@@ -37,8 +37,9 @@ const MAX_C = 200;
 
 const SECTIONS = [
   { id: 'consumption', label: 'Consumption' },
-  { id: 'solar', label: 'Solar generation' },
+  { id: 'solar', label: 'Solar' },
   { id: 'battery', label: 'Battery' },
+  { id: 'financial', label: 'Financial return' },
 ];
 const SAVINGS_YEAR = 30; // "After 30 years you'll have saved…"
 // Long-run average annual return of the US stock market (S&P 500, nominal, ~10%).
@@ -190,7 +191,7 @@ export default function App() {
               <SectionNav
                 items={SECTIONS}
                 watch={`${solarReady}-${showBattery}`}
-                onSelect={(id) => id === 'battery' && setShowBattery(true)}
+                onSelect={(id) => (id === 'battery' || id === 'financial') && setShowBattery(true)}
               />
             )}
 
@@ -348,19 +349,17 @@ export default function App() {
               </section>
             )}
 
-            {/* ---------------- Battery storage ---------------- */}
+            {/* ---------------- Battery storage + Financial return (both rendered by BatterySection) ---------------- */}
             {hasUsage && showSolar && showBattery && (
-              <section id="battery" className="section">
-                <BatterySection
-                  monthlyKwh={bill.months}
-                  production={solarReady ? production : null}
-                  utility={bill.utility}
-                  solarCost={e}
-                  solarYear1={x * (savingsOffset / 100)}
-                  zPct={z}
-                  solarReady={solarReady}
-                />
-              </section>
+              <BatterySection
+                monthlyKwh={bill.months}
+                production={solarReady ? production : null}
+                utility={bill.utility}
+                solarCost={e}
+                solarYear1={x * (savingsOffset / 100)}
+                zPct={z}
+                solarReady={solarReady}
+              />
             )}
           </>
         )}

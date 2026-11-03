@@ -8,6 +8,7 @@ import {
   formatDuration,
   combinedCashFlow,
   combinedYearlyFlows,
+  batteryCost,
 } from '../src/lib/battery.js';
 import { irr, breakevenYear } from '../src/lib/calc.js';
 import { _internal } from '../api/parse-panel.js';
@@ -59,7 +60,7 @@ test('formatDuration', () => {
 
 test('combinedCashFlow: costs, solar savings, PSE incentives per battery', () => {
   const rows = combinedCashFlow({ solarCost: 27668, batteries: 1, solarYear1: 2055, zPct: 7.5, years: 25 });
-  assert.equal(rows[0].net, -37668);
+  assert.equal(rows[0].net, -(27668 + 17000));
   close(rows[1].incentiveCum, 1500);
   close(rows[2].incentiveCum, 2000);
   close(rows[1].solarCum, 2055);
@@ -69,7 +70,7 @@ test('combinedCashFlow: costs, solar savings, PSE incentives per battery', () =>
   assert.ok(irr(flows) > 0);
   const two = combinedCashFlow({ solarCost: 27668, batteries: 2, solarYear1: 2055, zPct: 7.5, years: 25 });
   close(two[1].incentiveCum, 3000);
-  assert.equal(two[0].net, -47668);
+  assert.equal(two[0].net, -(27668 + 27000));
   assert.ok(breakevenYear(two.map((r) => r.net)) >= breakevenYear(rows.map((r) => r.net)));
 });
 
@@ -92,4 +93,11 @@ test('parse-panel clean: drops main/slotless, normalizes fields', () => {
   assert.equal(out.panels[0].mainAmps, 200);
   assert.equal(out.panels[0].breakers.length, 2);
   assert.equal(out.panels[0].breakers[1].category, 'unknown');
+});
+
+test('batteryCost: first $17,000, each additional $10,000', () => {
+  assert.equal(batteryCost(0), 0);
+  assert.equal(batteryCost(1), 17000);
+  assert.equal(batteryCost(2), 27000);
+  assert.equal(batteryCost(3), 37000);
 });
