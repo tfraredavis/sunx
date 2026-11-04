@@ -5,7 +5,7 @@ import { fileToPayload } from '../lib/fileToPayload.js';
  * Upload any number of panel photos / PDFs. Each file is read separately by /api/parse-panel
  * and the panels found are passed to onPanels (appended to any already read).
  */
-export default function PanelUpload({ onPanels, onSkip, hasPanels }) {
+export default function PanelUpload({ onPanels, hasPanels }) {
   const inputRef = useRef(null);
   const [busy, setBusy] = useState(null); // { done, total } while reading
   const [errors, setErrors] = useState([]);
@@ -93,11 +93,6 @@ export default function PanelUpload({ onPanels, onSkip, hasPanels }) {
           {m}
         </p>
       ))}
-      {!hasPanels && !busy && (
-        <button type="button" className="link-btn" onClick={onSkip}>
-          Skip — I don't have a photo
-        </button>
-      )}
     </div>
   );
 }

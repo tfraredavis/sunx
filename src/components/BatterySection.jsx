@@ -37,7 +37,6 @@ const BUCKET = { critical: ['critical'], comfort: ['critical', 'comfort'] };
  */
 export default function BatterySection({ monthlyKwh, production, utility, solarCost, solarYear1, zPct, solarReady, address, solarDesign }) {
   const [panels, setPanels] = useState([]);
-  const [skipped, setSkipped] = useState(false);
   const [mode, setMode] = useState(null); // 'critical' | 'comfort'
   const [selected, setSelected] = useState(new Set());
   const [criticalKwh, setCriticalKwh] = useState(CRITICAL_KWH_DEFAULT);
@@ -70,7 +69,7 @@ export default function BatterySection({ monthlyKwh, production, utility, solarC
     () => panels.flatMap((p, pi) => p.breakers.map((b, bi) => ({ ...b, id: `${pi}-${bi}` }))),
     [panels]
   );
-  const ready = panels.length > 0 || skipped;
+  const ready = panels.length > 0;
 
   function chooseBucket(m) {
     setMode(m);
@@ -156,20 +155,13 @@ export default function BatterySection({ monthlyKwh, production, utility, solarC
           {/* Left: panel */}
           <div className="battery-left">
             <div className="card">
-              {!skipped && (
-                <PanelUpload
-                  hasPanels={panels.length > 0}
-                  onPanels={(p) => setPanels((prev) => [...prev, ...p])}
-                  onSkip={() => setSkipped(true)}
-                />
-              )}
+              <PanelUpload hasPanels={panels.length > 0} onPanels={(p) => setPanels((prev) => [...prev, ...p])} />
               {panels.length > 0 && (
                 <>
                   <PanelGraphic panels={panels} selected={selected} onToggle={toggle} />
                   <p className="footnote">Tap any circuit to put it on backup (orange) or shed it (gray).</p>
                 </>
               )}
-              {skipped && <p className="muted">No panel photo — we'll use typical values for your home.</p>}
             </div>
           </div>
 

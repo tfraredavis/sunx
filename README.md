@@ -132,7 +132,7 @@ includes the contact info and all design data for future consultant routing by Z
 
 ### Batteries — `src/components/BatterySection.jsx`, `src/lib/battery.js`, `api/parse-panel.js`
 1. **Panel photos** (any number; JPG/PNG/PDF). Each file is read by Claude (`/api/parse-panel`): circuit label (newest,
-   not crossed-out), amps, poles, slot, and a backup category (critical / comfort / other / unknown). "Skip" is allowed.
+   not crossed-out), amps, poles, slot, and a backup category (critical / comfort / other / unknown).
 2. **Panel graphic**: two columns in slot order; tap to put a circuit on backup (dark orange) or shed it (gray).
 3. **Critical** selects critical circuits; **Comfort** adds water heating, heating and cooling.
    Outage load: Critical = 10 kWh/day (editable); Comfort = 50% (editable) of each month's daily use from the bill.
